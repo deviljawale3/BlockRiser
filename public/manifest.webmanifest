@@ -1,0 +1,17 @@
+{
+    "name": "BlockRiser Tycoon",
+    "short_name": "BlockRiser",
+    "description": "Hyper-casual block puzzle game with tycoon mechanics.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0f0c29",
+    "theme_color": "#00d2ff",
+    "icons": [
+        {
+            "src": "/background.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ]
+}

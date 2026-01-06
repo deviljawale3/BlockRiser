@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BlockRiser · DeeJay Labs</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="/index.css">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js');
+            });
+        }
+    </script>
+</head>
+
+<body>
+
+    <div id="splash-screen">
+        <div class="splash-logo">BLOCK RISER</div>
+    </div>
+
+    <div class="bg-3d"></div>
+    <div class="bg-overlay-gradient"></div>
+
+    <header id="game-header" class="hidden">
+        <div class="hud-group">
+            <div class="hud-label">Score</div>
+            <div id="hud-score" class="hud-value highlight">0</div>
+        </div>
+        <div class="hud-group">
+            <div class="hud-label" id="hud-level-label">Level</div>
+            <div id="hud-level" class="hud-value">1</div>
+        </div>
+        <div class="hud-group">
+            <div class="hud-label">Best</div>
+            <div id="hud-highscore" class="hud-value">0</div>
+        </div>
+        <div class="hud-group">
+            <div class="hud-label">Gold</div>
+            <div id="hud-coins" class="hud-value gold">0</div>
+        </div>
+        <button id="pause-btn" class="icon-btn">⏸</button>
+    </header>
+
+    <main id="game-container">
+        <div id="level-up-indicator" class="level-up-msg">LEVEL UP!</div>
+        <canvas id="gameCanvas" width="800" height="1200"></canvas>
+        <div id="toast-instruction" class="toast">Drag pieces to the grid</div>
+
+        <div id="powerup-ui" class="powerup-bar hidden">
+            <button id="btn-hammer" class="powerup-btn">
+                <span class="powerup-icon">🔨</span>
+                <span id="count-hammer" class="powerup-count">0</span>
+            </button>
+            <button id="btn-bomb" class="powerup-btn">
+                <span class="powerup-icon">💣</span>
+                <span id="count-bomb" class="powerup-count">0</span>
+            </button>
+            <button id="btn-reroll" class="powerup-btn">
+                <span class="powerup-icon">🔄</span>
+                <span id="count-reroll" class="powerup-count">0</span>
+            </button>
+            <button id="btn-undo" class="powerup-btn">
+                <span class="powerup-icon">↩️</span>
+                <span id="count-undo" class="powerup-count">0</span>
+            </button>
+        </div>
+    </main>
+
+    <!-- Overlay System -->
+
+    <!-- Main Menu -->
+    <div id="menu-overlay" class="overlay">
+        <div class="overlay-content">
+            <h1 class="title-large">BLOCK RISER</h1>
+            <p class="subtitle">TYCOON EDITION</p>
+
+            <div class="menu-stack">
+                <button id="btn-play-menu" class="btn-3d btn-blue">New Game</button>
+                <button id="btn-resume" class="btn-3d btn-green hidden">Resume</button>
+                <button id="btn-tutorial" class="btn-3d btn-orange">How to Play</button>
+            </div>
+
+            <div class="menu-row">
+                <button id="btn-shop" class="btn-glass-dark" style="flex:1">
+                    <span class="icon">🛒</span> SHOP
+                </button>
+                <button id="btn-settings" class="btn-glass-dark" style="flex:1">
+                    <span class="icon">⚙️</span>
+                </button>
+            </div>
+
+            <div class="menu-row">
+                <button id="btn-stats" class="btn-glass-dark" style="flex:1">
+                    <span class="icon">📊</span> STATS
+                </button>
+                <button id="btn-leaderboard" class="btn-glass-dark" style="flex:1">
+                    <span class="icon">🏆</span>
+                </button>
+                <button id="btn-themes" class="btn-glass-dark" style="flex:1">
+                    <span class="icon">🎨</span>
+                </button>
+            </div>
+
+            <div id="menu-coin-display" class="coin-balance-display">0 🟡</div>
+            <div class="brand-footer">DEEJAY LABS</div>
+        </div>
+    </div>
+
+    <!-- Mode Selection -->
+    <div id="mode-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">SELECT MODE</h2>
+            <div class="menu-stack" style="margin-top:20px">
+                <button id="btn-mode-classic" class="btn-3d btn-blue">Classic</button>
+                <button id="btn-mode-adventure" class="btn-3d btn-orange">Adventure</button>
+                <button id="btn-mode-bomb" class="btn-3d btn-red">Bomb Rush</button>
+                <button id="btn-mode-zen" class="btn-3d btn-purple">Zen Mode</button>
+                <button id="btn-mode-back" class="btn-secondary">Back</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Adventure Map -->
+    <div id="adventure-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">ADVENTURE</h2>
+            <div id="adventure-list" class="adventure-map"></div>
+            <button id="btn-adventure-back" class="btn-secondary">Back</button>
+        </div>
+    </div>
+
+    <!-- Shop -->
+    <div id="shop-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">MEGA SHOP</h2>
+            <div id="shop-coin-display" class="coin-balance-display" style="margin-bottom:10px">0 🟡</div>
+            <div id="shop-container" class="shop-grid">
+                <div class="shop-item" onclick="buyItem('hammer', 200)">
+                    <span class="shop-icon">🔨</span>
+                    <div class="shop-name">Hammer</div>
+                    <div class="shop-desc">Remove 1 block</div>
+                    <div class="shop-price">200 🟡</div>
+                </div>
+                <div class="shop-item" onclick="buyItem('bomb', 500)">
+                    <span class="shop-icon">💣</span>
+                    <div class="shop-name">TNT</div>
+                    <div class="shop-desc">3x3 Blast!</div>
+                    <div class="shop-price">500 🟡</div>
+                </div>
+                <div class="shop-item" onclick="buyItem('reroll', 150)">
+                    <span class="shop-icon">🔄</span>
+                    <div class="shop-name">Reroll</div>
+                    <div class="shop-desc">Get new pieces</div>
+                    <div class="shop-price">150 🟡</div>
+                </div>
+                <div class="shop-item" onclick="buyItem('undo', 300)">
+                    <span class="shop-icon">↩️</span>
+                    <div class="shop-name">Undo</div>
+                    <div class="shop-desc">Undo last move</div>
+                    <div class="shop-price">300 🟡</div>
+                </div>
+            </div>
+            <button id="btn-close-shop" class="btn-secondary" style="margin-top:20px">Close</button>
+        </div>
+    </div>
+
+    <!-- Daily Rewards -->
+    <div id="daily-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">DAILY BONUS</h2>
+            <p class="subtitle">COLLECT YOUR REWARD</p>
+            <div id="daily-grid" class="daily-grid"></div>
+            <button id="btn-claim-daily" class="btn-3d btn-green">Claim Now!</button>
+        </div>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">PAUSED</h2>
+            <div class="menu-stack" style="margin-top:30px">
+                <button id="btn-pause-resume" class="btn-3d btn-blue">Resume</button>
+                <button id="btn-pause-quit" class="btn-3d btn-red">Quit Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameover-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">GAME OVER</h2>
+            <div class="score-display" id="final-score">0</div>
+            <div style="font-size:14px; opacity:0.6; margin-bottom:20px">BEST: <span id="final-highscore">0</span></div>
+            <button id="btn-restart" class="btn-3d btn-blue">Play Again</button>
+            <button id="btn-home" class="btn-secondary">Main Menu</button>
+        </div>
+    </div>
+
+    <!-- High Score Input -->
+    <div id="input-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">NEW RECORD!</h2>
+            <div class="score-display" id="input-score">0</div>
+            <input type="text" id="initials-input" class="initials-input" maxlength="3" placeholder="AAA">
+            <button id="btn-submit-score" class="btn-3d btn-green" style="margin-top:20px">Save Record</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div id="leaderboard-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">TOP PLAYERS</h2>
+            <div id="leaderboard-list" class="glass-panel" style="width:100%; margin-top:20px; padding:0"></div>
+            <button id="btn-close-leaderboard" class="btn-secondary">Close</button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div id="stats-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">YOUR STATS</h2>
+            <div id="stats-grid" class="stats-container" style="margin:20px 0"></div>
+            <h3 style="text-align:left; width:100%; font-size:14px; margin-bottom:10px">ACHIEVEMENTS</h3>
+            <div id="achievements-grid" class="achievements-list"></div>
+            <button id="btn-close-stats" class="btn-secondary" style="margin-top:20px">Close</button>
+        </div>
+    </div>
+
+    <!-- Themes -->
+    <div id="themes-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">THEMES</h2>
+            <div id="theme-grid" class="grid-select" style="margin-top:20px"></div>
+            <button id="btn-close-themes" class="btn-secondary" style="margin-top:20px">Close</button>
+        </div>
+    </div>
+
+    <!-- Settings -->
+    <div id="settings-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">SETTINGS</h2>
+            <div class="glass-panel" style="width:100%; margin-top:20px">
+                <div class="settings-row">
+                    <span>Speed</span>
+                    <button id="btn-speed-toggle" class="btn-toggle">NORM</button>
+                </div>
+                <div class="settings-row">
+                    <span>Music</span>
+                    <button id="btn-music-toggle" class="btn-toggle on">ON</button>
+                </div>
+                <div class="settings-row">
+                    <span>SFX</span>
+                    <button id="btn-sfx-toggle" class="btn-toggle on">ON</button>
+                </div>
+                <div class="settings-row">
+                    <span>Graphics</span>
+                    <button id="btn-gfx-toggle" class="btn-toggle on">HIGH</button>
+                </div>
+                <div class="settings-row">
+                    <span>Vibration</span>
+                    <button id="btn-vib-toggle" class="btn-toggle on">ON</button>
+                </div>
+            </div>
+            <button id="btn-reset-data" class="btn-red btn-3d"
+                style="font-size:10px; width:auto; padding:8px 20px">Reset All Data</button>
+            <button id="btn-close-settings" class="btn-secondary" style="margin-top:20px">Close</button>
+        </div>
+    </div>
+
+    <footer>BlockRiser- DeeJay Labs</footer>
+
+    <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
