@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -24,9 +24,16 @@
 
     <div id="splash-screen">
         <div class="splash-logo">BLOCK RISER</div>
+        <div class="loader"></div>
     </div>
 
-    <div class="bg-3d"></div>
+    <!-- Parallax Background -->
+    <div class="city-parallax">
+        <div class="city-layer layer-1"></div>
+        <div class="city-layer layer-2"></div>
+        <div class="city-layer layer-3"></div>
+    </div>
+
     <div class="bg-overlay-gradient"></div>
 
     <header id="game-header" class="hidden">
@@ -46,12 +53,29 @@
             <div class="hud-label">Gold</div>
             <div id="hud-coins" class="hud-value gold">0</div>
         </div>
+        <div id="league-badge" class="hud-group league-bronze">
+            <div class="hud-label">League</div>
+            <div id="hud-league" class="hud-value">BRONZE</div>
+        </div>
+        <div id="policy-badge" class="hud-group" style="display:none">
+            <div class="hud-label">Policy</div>
+            <div id="hud-policy" class="hud-value" style="font-size:14px"></div>
+            <div id="bailout-tokens" class="bailout-tokens"></div>
+        </div>
         <button id="pause-btn" class="icon-btn">⏸</button>
     </header>
 
     <main id="game-container">
+        <div id="bailout-sweep" class="bailout-sweep"></div>
         <div id="level-up-indicator" class="level-up-msg">LEVEL UP!</div>
+        <div id="boss-ui" class="boss-bar hidden">
+            <div class="boss-label">EPIC BOSS: <span id="boss-name">TOY MASTER</span></div>
+            <div class="boss-health-wrap">
+                <div id="boss-health" class="boss-health-fill"></div>
+            </div>
+        </div>
         <canvas id="gameCanvas" width="800" height="1200"></canvas>
+
         <div id="toast-instruction" class="toast">Drag pieces to the grid</div>
 
         <div id="powerup-ui" class="powerup-bar hidden">
@@ -71,6 +95,18 @@
                 <span class="powerup-icon">↩️</span>
                 <span id="count-undo" class="powerup-count">0</span>
             </button>
+            <button id="btn-merger" class="powerup-btn">
+                <span class="powerup-icon">🧬</span>
+                <span id="count-merger" class="powerup-count">0</span>
+            </button>
+            <button id="btn-takeover" class="powerup-btn">
+                <span class="powerup-icon">🏢</span>
+                <span id="count-takeover" class="powerup-count">0</span>
+            </button>
+            <button id="btn-tax-haven" class="powerup-btn">
+                <span class="powerup-icon">🏝️</span>
+                <span id="count-tax-haven" class="powerup-count">0</span>
+            </button>
         </div>
     </main>
 
@@ -78,53 +114,155 @@
 
     <!-- Main Menu -->
     <div id="menu-overlay" class="overlay">
+        <div class="bg-3d-scene" style="z-index: -1;">
+            <div class="floating-shape shape-1"></div>
+            <div class="floating-shape shape-2"></div>
+            <div class="floating-shape shape-3"></div>
+            <div class="floating-shape shape-4"></div>
+            <div class="floating-shape shape-5"></div>
+            <div class="floating-shape shape-6"></div>
+        </div>
+        <!-- Top Dashboard -->
+        <div class="home-dashboard">
+            <div class="dash-left">
+                <button id="btn-settings" class="icon-btn-glass">⚙️</button>
+                <button id="btn-themes" class="icon-btn-glass">🎨</button>
+            </div>
+            <div class="dash-center">
+                <div id="menu-coin-display" class="coin-balance-display">0 🟡</div>
+            </div>
+            <div class="dash-right">
+                <button id="btn-stats" class="icon-btn-glass">📊</button>
+                <button id="btn-leaderboard" class="icon-btn-glass">🏆</button>
+            </div>
+        </div>
+
+        <div class="overlay-content home-content">
+            <div class="hero-section">
+                <h1 class="logo-premium">BLOCK RISER</h1>
+                <p class="subtitle shimmering">TOY EDITION</p>
+            </div>
+
+            <div class="action-stack">
+                <button id="btn-play-menu" class="btn-premium btn-play">
+                    <div style="display:flex; flex-direction:column; align-items:center">
+                        <span class="btn-label">NEW GAME</span>
+                        <span class="btn-subtext" style="color:rgba(255,255,255,0.7)">START A NEW ADVENTURE</span>
+                    </div>
+                </button>
+                <button id="btn-resume" class="btn-premium btn-resume hidden">
+                    <div style="display:flex; flex-direction:column; align-items:center">
+                        <span class="btn-label">CONTINUE</span>
+                        <span class="btn-subtext" style="color:rgba(255,255,255,0.7)">RESUME YOUR GAME</span>
+                    </div>
+                </button>
+                <button id="btn-tutorial" class="btn-premium btn-tutorial">
+                    <div style="display:flex; flex-direction:column; align-items:center">
+                        <span class="btn-label">HOW TO PLAY</span>
+                        <span class="btn-subtext" style="color:rgba(255,255,255,0.7)">LEARN THE BASICS</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Bottom Toy Bar -->
+            <div class="tycoon-bar">
+                <button id="btn-shop" class="tycoon-btn">
+                    <span class="t-icon">🧸</span>
+                    <span class="t-label">TOY SHOP</span>
+                </button>
+                <button id="btn-hq" class="tycoon-btn hq-active">
+                    <span class="t-icon">🧩</span>
+                    <span class="t-label">TOY BOX</span>
+                </button>
+                <button id="btn-world" class="tycoon-btn">
+                    <span class="t-icon">🗺️</span>
+                    <span class="t-label">WORLDS</span>
+                </button>
+            </div>
+            <div class="brand-footer-premium">DEEJAY LABS</div>
+        </div>
+    </div>
+
+    <!-- HQ Overlay -->
+    <div id="hq-overlay" class="overlay hidden">
         <div class="overlay-content">
-            <h1 class="title-large">BLOCK RISER</h1>
-            <p class="subtitle">TYCOON EDITION</p>
-
-            <div class="menu-stack">
-                <button id="btn-play-menu" class="btn-3d btn-blue">New Game</button>
-                <button id="btn-resume" class="btn-3d btn-green hidden">Resume</button>
-                <button id="btn-tutorial" class="btn-3d btn-orange">How to Play</button>
+            <h2 class="title-large">TOY BOX</h2>
+            <div class="glass-panel" style="width:100%; text-align:center; padding:15px">
+                <div id="hq-status" style="font-size:14px; opacity:0.8; margin-bottom:10px">Status: Starter Set
+                </div>
+                <div id="hq-income" style="font-size:18px; font-weight:900; color:var(--gold-color)">50 🟡 / HR
+                </div>
             </div>
+            <div id="hq-upgrades" class="shop-grid" style="margin-top:10px"></div>
 
-            <div class="menu-row">
-                <button id="btn-shop" class="btn-glass-dark" style="flex:1">
-                    <span class="icon">🛒</span> SHOP
-                </button>
-                <button id="btn-settings" class="btn-glass-dark" style="flex:1">
-                    <span class="icon">⚙️</span>
-                </button>
-            </div>
+            <h3 style="margin-top:20px; font-size:16px; letter-spacing:1px">COLLECTION</h3>
+            <div id="acquisitions-gallery" class="shop-grid"
+                style="margin-top:5px; grid-template-columns: repeat(5, 1fr); gap: 5px;"></div>
 
-            <div class="menu-row">
-                <button id="btn-stats" class="btn-glass-dark" style="flex:1">
-                    <span class="icon">📊</span> STATS
-                </button>
-                <button id="btn-leaderboard" class="btn-glass-dark" style="flex:1">
-                    <span class="icon">🏆</span>
-                </button>
-                <button id="btn-themes" class="btn-glass-dark" style="flex:1">
-                    <span class="icon">🎨</span>
-                </button>
-            </div>
+            <button id="btn-close-hq" class="btn-secondary" style="margin-top:10px">Back</button>
+        </div>
+    </div>
 
-            <div id="menu-coin-display" class="coin-balance-display">0 🟡</div>
-            <div class="brand-footer">DEEJAY LABS</div>
+    <!-- World Map Overlay -->
+    <div id="world-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">WORLD MAP</h2>
+            <div id="city-list" class="adventure-map" style="margin-top:10px"></div>
+            <button id="btn-close-world" class="btn-secondary" style="margin-top:10px">Back</button>
         </div>
     </div>
 
     <!-- Mode Selection -->
     <div id="mode-overlay" class="overlay hidden">
-        <div class="overlay-content">
+        <div class="overlay-content" style="max-width: 400px;">
             <h2 class="title-large">SELECT MODE</h2>
-            <div class="menu-stack" style="margin-top:20px">
-                <button id="btn-mode-classic" class="btn-3d btn-blue">Classic</button>
-                <button id="btn-mode-adventure" class="btn-3d btn-orange">Adventure</button>
-                <button id="btn-mode-bomb" class="btn-3d btn-red">Bomb Rush</button>
-                <button id="btn-mode-zen" class="btn-3d btn-purple">Zen Mode</button>
-                <button id="btn-mode-back" class="btn-secondary">Back</button>
+            <p class="subtitle shimmering" style="margin-bottom: 25px;">PICK YOUR PLAYSTYLE</p>
+
+            <div class="menu-stack" style="gap: 12px;">
+                <button id="btn-mode-classic" class="btn-premium btn-play mode-card">
+                    <div class="mode-icon-wrap">📊</div>
+                    <div class="mode-info">
+                        <span class="btn-label">CLASSIC</span>
+                        <span class="btn-subtext">Original High-Score Dash</span>
+                    </div>
+                </button>
+
+                <button id="btn-mode-adventure" class="btn-premium btn-adventure mode-card">
+                    <div class="mode-icon-wrap">🗺️</div>
+                    <div class="mode-info">
+                        <span class="btn-label">ADVENTURE</span>
+                        <span class="btn-subtext">Explore Toy Worlds</span>
+                    </div>
+                </button>
+
+                <button id="btn-mode-bomb" class="btn-premium btn-red mode-card">
+                    <div class="mode-icon-wrap">💣</div>
+                    <div class="mode-info">
+                        <span class="btn-label">BOMB RUSH</span>
+                        <span class="btn-subtext">Beat the Clock!</span>
+                    </div>
+                </button>
+
+                <button id="btn-mode-zen" class="btn-premium btn-purple mode-card">
+                    <div class="mode-icon-wrap">🌸</div>
+                    <div class="mode-info">
+                        <span class="btn-label">ZEN MODE</span>
+                        <span class="btn-subtext">Relaxing Endless Flow</span>
+                    </div>
+                </button>
+
+                <button id="btn-mode-back" class="btn-secondary"
+                    style="margin-top: 15px; width: 100%; height: 50px;">Back to Toy Box</button>
             </div>
+        </div>
+    </div>
+    <!-- Policy Selection -->
+    <div id="policy-overlay" class="overlay hidden">
+        <div class="overlay-content">
+            <h2 class="title-large">POWER ROOM</h2>
+            <p class="subtitle" style="margin-bottom:10px">SELECT SPECIAL POWER</p>
+            <div id="policy-list" class="shop-grid" style="width:100%"></div>
+            <button id="btn-policy-skip" class="btn-secondary" style="margin-top:10px">Skip Power</button>
         </div>
     </div>
 
@@ -140,7 +278,7 @@
     <!-- Shop -->
     <div id="shop-overlay" class="overlay hidden">
         <div class="overlay-content">
-            <h2 class="title-large">MEGA SHOP</h2>
+            <h2 class="title-large">TOY SHOP</h2>
             <div id="shop-coin-display" class="coin-balance-display" style="margin-bottom:10px">0 🟡</div>
             <div id="shop-container" class="shop-grid">
                 <div class="shop-item" onclick="buyItem('hammer', 200)">
@@ -168,8 +306,9 @@
                     <div class="shop-price">300 🟡</div>
                 </div>
             </div>
-            <button id="btn-close-shop" class="btn-secondary" style="margin-top:20px">Close</button>
+            <div id="policy-shop" class="shop-grid" style="margin-top:10px"></div>
         </div>
+        <button id="btn-close-shop" class="btn-secondary" style="margin-top:10px">Close</button>
     </div>
 
     <!-- Daily Rewards -->
@@ -186,9 +325,18 @@
     <div id="pause-overlay" class="overlay hidden">
         <div class="overlay-content">
             <h2 class="title-large">PAUSED</h2>
-            <div class="menu-stack" style="margin-top:30px">
-                <button id="btn-pause-resume" class="btn-3d btn-blue">Resume</button>
-                <button id="btn-pause-quit" class="btn-3d btn-red">Quit Game</button>
+            <p class="subtitle shimmering">GAME ON HOLD</p>
+            <div class="menu-stack" style="margin-top:20px; width: 80%">
+                <button id="btn-pause-resume" class="btn-premium btn-play">
+                    <span class="btn-label">RESUME GAME</span>
+                </button>
+                <button id="btn-pause-quit" class="btn-premium btn-red">
+                    <span class="btn-label">QUIT GAME</span>
+                </button>
+            </div>
+            <div class="pause-brand">
+                <div class="brand-footer-premium">DEVELOPED BY</div>
+                <div class="deejay-logo-pause">DEEJAY LABS</div>
             </div>
         </div>
     </div>
@@ -210,7 +358,7 @@
             <h2 class="title-large">NEW RECORD!</h2>
             <div class="score-display" id="input-score">0</div>
             <input type="text" id="initials-input" class="initials-input" maxlength="3" placeholder="AAA">
-            <button id="btn-submit-score" class="btn-3d btn-green" style="margin-top:20px">Save Record</button>
+            <button id="btn-submit-score" class="btn-3d btn-green" style="margin-top:10px">Save Record</button>
         </div>
     </div>
 
@@ -218,7 +366,7 @@
     <div id="leaderboard-overlay" class="overlay hidden">
         <div class="overlay-content">
             <h2 class="title-large">TOP PLAYERS</h2>
-            <div id="leaderboard-list" class="glass-panel" style="width:100%; margin-top:20px; padding:0"></div>
+            <div id="leaderboard-list" class="glass-panel" style="width:100%; margin-top:10px; padding:0"></div>
             <button id="btn-close-leaderboard" class="btn-secondary">Close</button>
         </div>
     </div>
@@ -227,10 +375,12 @@
     <div id="stats-overlay" class="overlay hidden">
         <div class="overlay-content">
             <h2 class="title-large">YOUR STATS</h2>
-            <div id="stats-grid" class="stats-container" style="margin:20px 0"></div>
-            <h3 style="text-align:left; width:100%; font-size:14px; margin-bottom:10px">ACHIEVEMENTS</h3>
+            <div id="stats-grid" class="stats-container" style="margin:10px 0"></div>
+            <h3 style="text-align:left; width:100%; font-size:14px; margin-bottom:5px">UPGRADE TREE</h3>
+            <div id="upgrades-list" class="shop-grid" style="margin-bottom:10px; max-height: 200px;"></div>
+            <h3 style="text-align:left; width:100%; font-size:14px; margin-bottom:5px">ACHIEVEMENTS</h3>
             <div id="achievements-grid" class="achievements-list"></div>
-            <button id="btn-close-stats" class="btn-secondary" style="margin-top:20px">Close</button>
+            <button id="btn-close-stats" class="btn-secondary" style="margin-top:10px">Close</button>
         </div>
     </div>
 
@@ -238,8 +388,30 @@
     <div id="themes-overlay" class="overlay hidden">
         <div class="overlay-content">
             <h2 class="title-large">THEMES</h2>
-            <div id="theme-grid" class="grid-select" style="margin-top:20px"></div>
-            <button id="btn-close-themes" class="btn-secondary" style="margin-top:20px">Close</button>
+            <div id="theme-grid" class="grid-select" style="margin-top:10px"></div>
+            <button id="btn-close-themes" class="btn-secondary" style="margin-top:10px">Close</button>
+        </div>
+    </div>
+
+    <!-- How to Play -->
+    <div id="tutorial-overlay" class="overlay hidden">
+        <div class="overlay-content" style="max-width: 450px;">
+            <h2 class="title-large shimmering">HOW TO PLAY</h2>
+            <div class="glass-panel"
+                style="width:100%; margin-top:10px; text-align: left; font-size: 14px; line-height: 1.6; padding: 20px;">
+                <p>📊 <b>Drag & Drop:</b> Move blocks from your queue to the grid. Fill rows or columns to clear them
+                    and
+                    earn points!</p>
+                <p>🔥 <b>Combo Strategy:</b> Clear multiple lines at once to build <b>Combo Heat</b> for massive
+                    multipliers.</p>
+                <p>🛠️ <b>Power-Ups:</b> Use Hammers to remove single blocks or TNT to clear 3x3 areas. Reroll the queue
+                    if you're stuck.</p>
+                <p>⚔️ <b>Boss Fights:</b> In Adventure mode, clear blocks to damage bosses and unlock their
+                    treasures!</p>
+            </div>
+            <button id="btn-close-tutorial" class="btn-premium btn-play" style="margin-top:20px; width: 100%;">
+                <span class="btn-label">GOT IT!</span>
+            </button>
         </div>
     </div>
 
@@ -271,13 +443,25 @@
             </div>
             <button id="btn-reset-data" class="btn-red btn-3d"
                 style="font-size:10px; width:auto; padding:8px 20px">Reset All Data</button>
-            <button id="btn-close-settings" class="btn-secondary" style="margin-top:20px">Close</button>
+            <button id="btn-close-settings" class="btn-secondary" style="margin-top:10px">Close</button>
         </div>
     </div>
 
-    <footer>BlockRiser- DeeJay Labs</footer>
+    <footer class="main-footer">DEEJAY LABS</footer>
 
     <script type="module" src="/index.tsx"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js');
+        }
+        window.addEventListener('load', () => {
+            const splash = document.getElementById('splash-screen');
+            setTimeout(() => {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.remove(), 500);
+            }, 1000);
+        });
+    </script>
 </body>
 
 </html>

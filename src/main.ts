@@ -85,14 +85,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('btn-resume')?.classList.remove('hidden');
         }
 
-        const ctx = canvas.getContext('2d');
-        if (ctx) {
-            ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-            ctx.beginPath();
-            for (let i = 0; i < 800; i += 100) { ctx.moveTo(i, 0); ctx.lineTo(i, 1200); }
-            ctx.stroke();
-        }
-
         hideSplash();
     }
 });

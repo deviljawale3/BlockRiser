@@ -8,9 +8,42 @@ export interface Theme {
     unlock: number;
 }
 
-export interface Shape {
+export interface Upgrade {
+    id: 'magnet' | 'insurance' | 'eye';
+    name: string;
+    desc: string;
+    maxLevel: number;
+    costs: number[];
+}
+
+export interface City {
     id: string;
-    map: number[][];
+    name: string;
+    unlockCost: number;
+    gridSize: number; // e.g., 8 for 8x8, 10 for 10x10
+    bonus: number; // Score multiplier
+    style: string;
+}
+
+export interface GameEvent {
+    id: 'goldRush' | 'sabotage' | 'bullMarket' | 'crash';
+    name: string;
+    desc: string;
+    duration: number; // in turns/moves
+}
+
+export interface HQLevel {
+    id: string;
+    name: string;
+    incomeRate: number; // coins per hour
+    cost: number;
+}
+
+export interface Policy {
+    id: 'aggressive' | 'taxShield' | 'leanStartup';
+    name: string;
+    desc: string;
+    icon: string;
 }
 
 export interface AdventureLevel {
@@ -19,6 +52,14 @@ export interface AdventureLevel {
     goalType: 'lines' | 'score' | 'blocks';
     target: number;
     desc: string;
+}
+
+export interface Acquisition {
+    id: string;
+    name: string;
+    desc: string;
+    requirement: number; // Total points
+    icon: string;
 }
 
 export interface Achievement {
@@ -34,6 +75,9 @@ export interface Inventory {
     bomb: number;
     reroll: number;
     undo: number;
+    merger: number;
+    takeover: number;
+    taxHaven: number;
 }
 
 // --- CONSTANTS & CONFIG ---
@@ -42,10 +86,10 @@ export const ROWS = 8;
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 1200;
 export const GRID_OFFSET_X = 40;
-export const GRID_OFFSET_Y = 100;
+export const GRID_OFFSET_Y = 50;
 export const CELL_SIZE = (CANVAS_WIDTH - (GRID_OFFSET_X * 2)) / COLS;
-export const QUEUE_Y = GRID_OFFSET_Y + (ROWS * CELL_SIZE) + 140;
-export const QUEUE_HEIGHT = CANVAS_HEIGHT - QUEUE_Y - 20;
+export const QUEUE_Y = CANVAS_HEIGHT - 320; // Lowered to fill empty space
+export const QUEUE_HEIGHT = 180; // Slightly taller area
 
 export const STORAGE_KEY = 'blockriser-highscore';
 export const STATE_KEY = 'blockriser-state';
@@ -53,23 +97,28 @@ export const STATS_KEY = 'blockriser-global-stats';
 export const LEADERBOARD_KEY = 'blockriser-leaderboard';
 
 export const PALETTES = [
-    ['#FF3366', '#33FF57', '#3366FF', '#FF33FF', '#FFFF33', '#33FFFF', '#FF9933'],
-    ['#FF6B6B', '#4ECDC4', '#556270', '#C7F464', '#FFCC5C'],
-    ['#D30C7B', '#FFE314', '#007CBE', '#FFFFFF', '#000000'],
-    ['#00FF00', '#00FF99', '#CCFF00', '#00CCFF', '#9900FF'],
-    ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#00FFFF', '#FF00FF']
+    // Standard Painted Wood (Primary)
+    ['#D32F2F', '#388E3C', '#1976D2', '#FBC02D', '#F57C00', '#7B1FA2', '#0288D1'],
+    // Pastel Paint
+    ['#E57373', '#81C784', '#64B5F6', '#FFF176', '#FFB74D', '#BA68C8', '#4DD0E1'],
+    // Dark Stain
+    ['#B71C1C', '#1B5E20', '#0D47A1', '#F57F17', '#E65100', '#4A148C', '#006064'],
+    // Nordic Wood (Monochrome + Accent)
+    ['#8D6E63', '#A1887F', '#D7CCC8', '#FF7043', '#5D4037'],
+    // Retro Paint
+    ['#F44336', '#4CAF50', '#2196F3', '#FFEB3B', '#FF9800']
 ];
 
 export const THEMES: Theme[] = [
-    { id: 'classic', name: 'Plastic', unlock: 0 },
-    { id: 'pixel', name: '8-Bit', unlock: 2000 },
-    { id: 'neon', name: 'Cyber', unlock: 5000 },
-    { id: 'midnight', name: 'Midnight', unlock: 8000 },
-    { id: 'obsidian', name: 'Void', unlock: 10000 },
-    { id: 'eclipse', name: 'Eclipse', unlock: 15000 },
-    { id: 'abyss', name: 'Abyss', unlock: 20000 },
-    { id: 'inferno', name: 'Inferno', unlock: 25000 },
-    { id: 'spectral', name: 'Spectral', unlock: 30000 }
+    { id: 'classic', name: 'Oak', unlock: 0 },
+    { id: 'pixel', name: 'Pine', unlock: 2000 },
+    { id: 'neon', name: 'Mahogany', unlock: 5000 },
+    { id: 'midnight', name: 'Ebony', unlock: 8000 },
+    { id: 'obsidian', name: 'Walnut', unlock: 10000 },
+    { id: 'eclipse', name: 'Cherry', unlock: 15000 },
+    { id: 'abyss', name: 'Teak', unlock: 20000 },
+    { id: 'inferno', name: 'Birch', unlock: 25000 },
+    { id: 'spectral', name: 'Maple', unlock: 30000 }
 ];
 
 export const SHAPES: Shape[] = [
@@ -97,7 +146,17 @@ export const ADVENTURE_LEVELS: AdventureLevel[] = [
     { id: 0, title: "Baby Steps", goalType: 'lines', target: 3, desc: "Clear 3 Lines" }, { id: 1, title: "Point Chaser", goalType: 'score', target: 500, desc: "Score 500 Pts" },
     { id: 2, title: "Brick Layer", goalType: 'blocks', target: 20, desc: "Place 20 Blocks" }, { id: 3, title: "Line Dancer", goalType: 'lines', target: 10, desc: "Clear 10 Lines" },
     { id: 4, title: "High Flyer", goalType: 'score', target: 2000, desc: "Score 2000 Pts" }, { id: 5, title: "Marathon", goalType: 'blocks', target: 50, desc: "Place 50 Blocks" },
-    { id: 6, title: "Double Trouble", goalType: 'lines', target: 20, desc: "Clear 20 Lines" }, { id: 7, title: "Grand Master", goalType: 'score', target: 5000, desc: "Score 5000 Pts" }
+    { id: 6, title: "Double Trouble", goalType: 'lines', target: 20, desc: "Clear 20 Lines" }, { id: 7, title: "Grand Master", goalType: 'score', target: 5000, desc: "Score 5000 Pts" },
+    { id: 8, title: "Brick Titan", goalType: 'blocks', target: 100, desc: "Place 100 Blocks" },
+    { id: 9, title: "The Rival", goalType: 'lines', target: 1, desc: "Settle the Score (BOSS)" }
+];
+
+export const ACQUISITIONS: Acquisition[] = [
+    { id: 'lemonade', name: 'Zest & Co', desc: 'Local Lemonade Empire. +1% Income.', requirement: 10000, icon: '🍋' },
+    { id: 'gym', name: 'Iron Core Fitness', desc: 'City-wide Gym Chain. +2% Score.', requirement: 50000, icon: '💪' },
+    { id: 'startup', name: 'ByteBound AI', desc: 'Predictive Algorithm Lab. +1 Move/Game.', requirement: 150000, icon: '🤖' },
+    { id: 'mall', name: 'Capital Plaza', desc: 'Continental Shopping Hub. +5% Income.', requirement: 500000, icon: '🛍️' },
+    { id: 'aerospace', name: 'Stellaris Corp', desc: 'Interorbital Freight. +10% Multiplier.', requirement: 1000000, icon: '🚀' }
 ];
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -106,6 +165,38 @@ export const ACHIEVEMENTS: Achievement[] = [
     { id: 'cleaner', name: 'Housekeeper', desc: 'Clear 100 Lines', icon: '🧹', check: s => s.linesCleared >= 100 },
     { id: 'bomber', name: 'Demolition Expert', desc: 'Use 20 Power-ups', icon: '💥', check: s => (s.hammersUsed + s.bombsUsed) >= 20 },
     { id: 'veteran', name: 'Veteran', desc: 'Play 50 Games', icon: '🎖️', check: s => s.gamesPlayed >= 50 }
+];
+
+export const UPGRADES: Upgrade[] = [
+    { id: 'magnet', name: 'Magnet', desc: 'Spawn Gold blocks (extra coins)', maxLevel: 5, costs: [500, 1000, 2000, 4000, 8000] },
+    { id: 'insurance', name: 'Insurance', desc: 'Chance to keep Undo charge', maxLevel: 5, costs: [1000, 2000, 4000, 8000, 15000] },
+    { id: 'eye', name: 'Architect Eye', desc: 'Visual placement helper', maxLevel: 3, costs: [2000, 5000, 10000] }
+];
+
+export const CITIES: City[] = [
+    { id: 'suburbs', name: 'Blocky Suburbs', unlockCost: 0, gridSize: 8, bonus: 1, style: 'default' },
+    { id: 'neon', name: 'Neon Downtown', unlockCost: 5000, gridSize: 9, bonus: 1.2, style: 'neon' },
+    { id: 'obsidian', name: 'Obsidian Valley', unlockCost: 15000, gridSize: 10, bonus: 1.5, style: 'obsidian' }
+];
+
+export const HQ_UPGRADES: HQLevel[] = [
+    { id: 'desk', name: 'Leased Desk', incomeRate: 10, cost: 500 },
+    { id: 'office', name: 'Small Office', incomeRate: 50, cost: 2000 },
+    { id: 'tower', name: 'corporate Tower', incomeRate: 200, cost: 10000 },
+    { id: 'global', name: 'Global HQ', incomeRate: 1000, cost: 50000 }
+];
+
+export const POLICIES: Policy[] = [
+    { id: 'aggressive', name: 'Aggressive Expansion', desc: 'Pieces 20% larger | 2x Score', icon: '📈' },
+    { id: 'taxShield', name: 'Tax Shield', desc: '3 Board Clears instead of Game Over', icon: '🛡️' },
+    { id: 'leanStartup', name: 'Lean Startup', desc: '1 Queue Slot | 3x HQ Passive Income', icon: '💡' }
+];
+
+export const EVENTS: GameEvent[] = [
+    { id: 'goldRush', name: 'GOLD RUSH!', desc: '50% Gold Blocks!', duration: 15 },
+    { id: 'sabotage', name: 'SABOTAGE!', desc: 'Rival blocks spawning!', duration: 1 },
+    { id: 'bullMarket', name: 'BULL MARKET!', desc: '2x Multiplier | High Speed!', duration: 20 },
+    { id: 'crash', name: 'MARKET CRASH!', desc: 'Queue Reset!', duration: 1 }
 ];
 
 export const DAILY_REWARDS = [
@@ -135,15 +226,49 @@ export class Piece {
     isDragging: boolean = false;
     rotated: boolean = false;
     visualRotation: number = 0;
+    timer: number = 0; // For inflation/crypto
+
+    type: 'normal' | 'gold' | 'metal' | 'multiplier' | 'inflation' | 'liquid' | 'crypto' = 'normal';
+    multiplierType?: 'square' | 'cross';
 
     constructor(lvl: number = 1, sid: string | null = null) {
         let s = sid ? SHAPES.find(x => x.id === sid) : SHAPES[Math.floor(Math.random() * SHAPES.length)];
         if (!s) s = SHAPES[0];
         this.shapeId = s.id;
         this.map = s.map.map(r => [...r]);
-        this.color = PALETTES[Math.min(lvl - 1, PALETTES.length - 1)][Math.floor(Math.random() * 5)];
+        const currentPalette = PALETTES[Math.min(lvl - 1, PALETTES.length - 1)];
+        this.color = currentPalette[Math.floor(Math.random() * currentPalette.length)];
         this.rows = this.map.length;
         this.cols = this.map[0].length;
+
+        // Enhanced special block spawning
+        const magnetLvl = GlobalStats.upgrades.magnet;
+        const goldChance = (magnetLvl * 0.08) + 0.02; // Base 2% + 8% per magnet level
+
+        if (Math.random() < goldChance) {
+            this.type = 'gold';
+            this.color = '#FFD700';
+        } else if (lvl > 3 && Math.random() < 0.08) { // Lowered from lvl 5, increased chance
+            this.type = 'metal';
+            this.color = '#A0A0A0';
+        } else if (Math.random() < 0.06) { // Increased from 0.03
+            this.type = 'multiplier';
+            this.multiplierType = Math.random() > 0.5 ? 'square' : 'cross';
+            // Visual indicator for multiplier blocks
+            this.color = this.multiplierType === 'square' ? '#FF6B6B' : '#4ECDC4';
+        } else if (lvl > 6 && Math.random() < 0.05) { // Lowered from lvl 8
+            this.type = 'inflation';
+        } else if (lvl > 4 && Math.random() < 0.05) { // Lowered from lvl 6
+            this.type = 'liquid';
+        } else if (lvl > 8 && Math.random() < 0.04) { // Lowered from lvl 10
+            this.type = 'crypto';
+        }
+
+        // Policy Effect: Aggressive Expansion (Larger Pieces)
+        if (State.activePolicy === 'aggressive' && Math.random() > 0.5) {
+            this.map.push(Array(this.cols).fill(1));
+            this.rows++;
+        }
     }
 
     rotate() {
@@ -168,13 +293,37 @@ export const GlobalStats = {
     blocksPlaced: 0,
     hammersUsed: 0,
     bombsUsed: 0,
-    unlockedAchievements: [] as string[],
-    adventureMaxLevel: 0,
-    coins: 0,
+    unlockedAchievements: ACHIEVEMENTS.map(a => a.id),
+    unlockedAcquisitions: ACQUISITIONS.map(a => a.id),
+    totalScore: 0,
+    adventureMaxLevel: 10,
+    coins: 9999, // Bonus coins for design/testing
     dailyStreak: 0,
     lastLogin: null as string | null,
-    inventory: { hammer: 3, bomb: 1, reroll: 1, undo: 1 } as Inventory
+    inventory: { hammer: 99, bomb: 99, reroll: 99, undo: 99, merger: 99, takeover: 99, taxHaven: 99 } as Inventory,
+    upgrades: { magnet: 5, insurance: 5, eye: 3 },
+    hqLevel: 4,
+    currentCity: 'suburbs',
+    unlockedCities: ['suburbs', 'neon', 'obsidian'],
+    lastPassiveCollection: Date.now(),
+    leagueRank: 4,
+    stocks: { brsr: 10, gold: 5, cube: 0, tyn: 0 },
+    bossDefeated: 0
 };
+
+export const LEAGUES = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND'];
+
+export function updateStocks() {
+    const ticker = document.querySelector('.ticker');
+    if (!ticker) return;
+    const items = ['$BRSR', '$GOLD', '$CUBE', '$TYN'];
+    ticker.innerHTML = items.map(item => {
+        const change = (Math.random() * 20 - 10).toFixed(1);
+        const up = parseFloat(change) >= 0;
+        return `<span>${item} <b class="${up ? 'up' : 'down'}">${up ? '+' : ''}${change}%</b></span>`;
+    }).join(' ');
+}
+setInterval(updateStocks, 30000); // Update every 30s
 
 export const State = {
     grid: [] as (any | null)[][],
@@ -208,7 +357,18 @@ export const State = {
     screenShake: 0,
     clearStartTime: 0,
     previousMove: null as any | null,
-    gameRunning: false // New flag to prevent multiple loops
+    gameRunning: false,
+    investor: { active: false, type: 'lines', target: 0, progress: 0, movesLeft: 0, reward: 0 },
+    frenzy: { moves: 0, mult: 1 },
+    taxHavenMoves: 0,
+    moveCount: 0,
+    boss: { active: false, name: '', health: 100, maxHealth: 100, movesLeft: 20 },
+    comboHeat: 0,
+    activePolicy: null as 'aggressive' | 'taxShield' | 'leanStartup' | null,
+    bailoutsLeft: 0,
+    activeEvent: null as GameEvent | null,
+    eventTimer: 0,
+    phantomPos: null as { x: number, y: number, gx: number, gy: number } | null
 };
 
 // --- AUDIO SYSTEM ---
@@ -240,23 +400,35 @@ export const AudioSys = {
     },
     startMusic() {
         if (!State.settings.music || !this.ctx || this.musicInterval) return;
-        const playChord = () => {
+        let step = 0;
+        const melody = [261.63, 329.63, 392.00, 523.25, 392.00, 329.63]; // C Major arpeggio
+        const playBeat = () => {
             if (!State.settings.music || !this.ctx) return;
-            const baseFreq = 110 + (State.level * 10), ratios = [1, 1.5, 1.25, 2.0];
-            const freq = baseFreq * ratios[Math.floor(Math.random() * ratios.length)];
-            const osc = this.ctx.createOscillator(), gain = this.ctx.createGain(), panner = this.ctx.createStereoPanner();
-            osc.type = Math.random() > 0.5 ? 'sine' : 'triangle';
-            osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-            osc.detune.value = (Math.random() - 0.5) * 10;
-            gain.gain.setValueAtTime(0, this.ctx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.03, this.ctx.currentTime + 1.0);
-            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 4.0);
-            panner.pan.value = (Math.random() - 0.5) * 0.8;
-            osc.connect(gain); gain.connect(panner); panner.connect(this.ctx.destination);
-            osc.start(); osc.stop(this.ctx.currentTime + 4.5);
+            const t = this.ctx.currentTime;
+
+            // Bass pulse
+            const bass = this.ctx.createOscillator(), bg = this.ctx.createGain();
+            bass.type = 'sine';
+            bass.frequency.setValueAtTime(step % 4 === 0 ? 65.41 : 49.00, t); // C1 or G0
+            bg.gain.setValueAtTime(0.04, t);
+            bg.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+            bass.connect(bg); bg.connect(this.ctx.destination);
+            bass.start(); bass.stop(t + 0.5);
+
+            // Melody
+            if (step % 2 === 0) {
+                const mel = this.ctx.createOscillator(), mg = this.ctx.createGain();
+                mel.type = 'triangle';
+                mel.frequency.setValueAtTime(melody[Math.floor(step / 2) % melody.length], t);
+                mg.gain.setValueAtTime(0.02, t);
+                mg.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+                mel.connect(mg); mg.connect(this.ctx.destination);
+                mel.start(); mel.stop(t + 0.8);
+            }
+            step++;
         };
-        playChord();
-        this.musicInterval = setInterval(playChord, 3000);
+        playBeat();
+        this.musicInterval = setInterval(playBeat, 500);
     },
     stopMusic() {
         if (this.musicInterval) {
@@ -308,7 +480,14 @@ export const SaveManager = {
                 const parsed = JSON.parse(saved);
                 Object.assign(GlobalStats, parsed);
                 // Ensure inventory exists
-                if (!GlobalStats.inventory) GlobalStats.inventory = { hammer: 3, bomb: 1, reroll: 1, undo: 1 };
+                if (!GlobalStats.inventory) GlobalStats.inventory = { hammer: 3, bomb: 1, reroll: 1, undo: 1, merger: 1, takeover: 1, taxHaven: 1 } as Inventory;
+                if (GlobalStats.totalScore === undefined) GlobalStats.totalScore = 0;
+
+                // FORCE UNLOCK FOR DESIGN REVIEW
+                GlobalStats.adventureMaxLevel = 10;
+                GlobalStats.unlockedCities = ['suburbs', 'neon', 'obsidian', 'tokyo', 'cyberpunk']; // Add all known cities if possible
+                GlobalStats.unlockedAcquisitions = ACQUISITIONS.map(a => a.id);
+                GlobalStats.unlockedAchievements = ACHIEVEMENTS.map(a => a.id);
             }
         } catch (e) { console.error("Failed to load global stats", e); }
     },
@@ -349,31 +528,44 @@ export const SaveManager = {
             const saved = localStorage.getItem(STATE_KEY);
             if (!saved) return false;
             const d = JSON.parse(saved);
+
+            // Validate essential data
+            if (!d.grid || !d.queue) throw new Error("Corrupted save data");
+
             State.grid = d.grid;
-            State.score = d.score;
-            State.level = d.level;
-            State.linesClearedTotal = d.lines;
-            State.streak = d.streak;
+            State.score = d.score || 0;
+            State.level = d.level || 1;
+            State.linesClearedTotal = d.lines || 0;
+            State.streak = d.streak || 0;
             State.currentTheme = d.thm || 'classic';
             State.gameMode = d.gm || 'classic';
             State.bombCounter = d.bc || 8;
             State.adventure = d.adv || { levelId: 0, progress: 0, sessionBlocks: 0, sessionLines: 0 };
-            State.queue = d.queue.map((q: any) => {
+
+            State.queue = (d.queue || []).map((q: any) => {
                 if (!q) return null;
-                const p = new Piece(State.level, q.sid);
-                p.color = q.c;
-                if (q.r) p.rotate();
-                p.scale = p.targetScaleQueue;
-                return p;
+                try {
+                    const p = new Piece(State.level, q.sid);
+                    p.color = q.c || p.color;
+                    if (q.r) p.rotate();
+                    p.scale = p.targetScaleQueue;
+                    return p;
+                } catch (e) { return null; }
             });
+            // Ensure queue is filled if something went wrong
+            while (State.queue.length < 3) State.queue.push(new Piece(State.level));
+
             return true;
-        } catch (e) { return false; }
+        } catch (e) {
+            console.error("Load failed:", e);
+            return false;
+        }
     }
 };
 
 // --- CORE UTILS ---
 
-export function vibrate(ms: number) {
+export function vibrate(ms: number | number[]) {
     if (State.settings.vibration && navigator.vibrate) navigator.vibrate(ms);
 }
 
@@ -400,25 +592,47 @@ export function updateHUD() {
     const hudHighScore = document.getElementById('hud-highscore');
     const hudLevel = document.getElementById('hud-level');
     if (hudScore) hudScore.innerText = State.score.toString();
-    if (hudHighScore) hudHighScore.innerText = State.highScore.toString();
+    if (hudHighScore) hudHighScore.innerText = (State.highScore || 0).toString();
     if (hudLevel) {
-        if (State.gameMode === 'adventure') {
+        if (State.gameMode === 'adventure' && ADVENTURE_LEVELS[State.adventure.levelId]) {
             const l = ADVENTURE_LEVELS[State.adventure.levelId];
-            hudLevel.innerText = `${State.adventure.progress}/${l.target}`;
+            hudLevel.innerText = `${State.adventure.progress || 0}/${l.target}`;
             const lbl = document.getElementById('hud-level-label');
             if (lbl) lbl.innerText = 'Goal';
         } else {
-            hudLevel.innerText = State.level.toString();
+            hudLevel.innerText = (State.level || 1).toString();
             const lbl = document.getElementById('hud-level-label');
             if (lbl) lbl.innerText = 'Level';
         }
     }
-    const header = document.querySelector('header .hud-group:first-child .hud-label');
-    if (header) {
+    const modeLabel = document.querySelector('header .hud-group:first-child .hud-label') as HTMLElement;
+    if (modeLabel) {
         const modeNames: any = { classic: 'Score', zen: 'Zen', bomb: 'Bomb', adventure: 'Adv' };
-        header.textContent = modeNames[State.gameMode] || 'Score';
+        modeLabel.innerText = modeNames[State.gameMode] || 'Score';
     }
     updateCoinDisplays();
+    const pBadge = document.getElementById('policy-badge');
+    if (pBadge) {
+        if (State.activePolicy) {
+            pBadge.style.display = 'flex';
+            const val = document.getElementById('hud-policy');
+            const p = POLICIES.find(it => it.id === State.activePolicy);
+            if (val && p) val.innerText = p.icon;
+
+            // Render Bailout Tokens
+            const btokens = document.getElementById('bailout-tokens');
+            if (btokens && State.activePolicy === 'taxShield') {
+                btokens.innerHTML = '';
+                for (let i = 0; i < 3; i++) {
+                    const t = document.createElement('div');
+                    t.className = 'shield-token' + (i >= State.bailoutsLeft ? ' spent' : '');
+                    btokens.appendChild(t);
+                }
+            }
+        } else {
+            pBadge.style.display = 'none';
+        }
+    }
 }
 
 export function updateTools() {
@@ -434,6 +648,13 @@ export function updateTools() {
     if (countReroll) countReroll.innerText = inv.reroll.toString();
     if (countUndo) countUndo.innerText = inv.undo.toString();
 
+    const countMerger = document.getElementById('count-merger');
+    const countTakeover = document.getElementById('count-takeover');
+    const countTaxHaven = document.getElementById('count-tax-haven');
+    if (countMerger) countMerger.innerText = inv.merger.toString();
+    if (countTakeover) countTakeover.innerText = inv.takeover.toString();
+    if (countTaxHaven) countTaxHaven.innerText = inv.taxHaven.toString();
+
     const btnHammer = document.getElementById('btn-hammer');
     const btnBomb = document.getElementById('btn-bomb');
     const btnReroll = document.getElementById('btn-reroll');
@@ -443,6 +664,13 @@ export function updateTools() {
     if (btnBomb) btnBomb.className = 'powerup-btn ' + (inv.bomb ? '' : 'disabled') + (State.activeTool === 'bomb' ? ' active' : '');
     if (btnReroll) btnReroll.className = 'powerup-btn ' + (inv.reroll ? '' : 'disabled');
     if (btnUndo) btnUndo.className = 'powerup-btn ' + (inv.undo && State.previousMove ? '' : 'disabled');
+
+    const btnMerger = document.getElementById('btn-merger');
+    const btnTakeover = document.getElementById('btn-takeover');
+    const btnTaxHaven = document.getElementById('btn-tax-haven');
+    if (btnMerger) btnMerger.className = 'powerup-btn ' + (inv.merger && State.queue[0] && State.queue[1] ? '' : 'disabled');
+    if (btnTakeover) btnTakeover.className = 'powerup-btn ' + (inv.takeover ? '' : 'disabled');
+    if (btnTaxHaven) btnTaxHaven.className = 'powerup-btn ' + (inv.taxHaven ? '' : 'disabled') + (State.taxHavenMoves > 0 ? ' active' : '');
 }
 
 export function positionQueue() {
@@ -456,10 +684,21 @@ export function positionQueue() {
 }
 
 export function fillQueue(resetUndo: boolean = true) {
-    State.queue = [new Piece(State.level), new Piece(State.level), new Piece(State.level)];
-    positionQueue();
     if (resetUndo) State.previousMove = null;
-    checkGO();
+    const count = (State.activePolicy === 'leanStartup' ? 1 : 3);
+
+    // Initialize if undefined
+    if (!State.queue) State.queue = [];
+
+    // Crucial: Filter out nulls so we only count active pieces
+    State.queue = State.queue.filter(p => p !== null);
+
+    while (State.queue.length < count) {
+        State.queue.push(new Piece(State.level));
+    }
+    positionQueue();
+    // Delay check to allow render of new pieces so users don't get 'invisible' Game Over
+    setTimeout(() => checkGO(), 300);
     SaveManager.saveGame();
 }
 
@@ -474,12 +713,22 @@ export function canPlace(p: Piece, gx: number, gy: number): boolean {
     return true;
 }
 
-export function spawnPart(x: number, y: number, c: string, cnt: number, type: string = 'debris') {
+export function spawnPart(x: number, y: number, c: string, cnt: number, type: string = 'debris', symbol: string = '') {
     const speedMultipliers = [1.0, 1.5, 2.5];
     const speedFactor = (1.0 + ((State.level - 1) * 0.05)) * speedMultipliers[State.settings.gameSpeed];
     for (let i = 0; i < cnt; i++) {
-        let speed = type === 'explosion' ? 8 : 5;
-        State.particles.push({ x: x, y: y, vx: (Math.random() - 0.5) * speed, vy: (Math.random() - 0.5) * speed, life: 1, c: c, type: type, s: Math.random() * 8 + 4 });
+        let speed = type === 'explosion' ? 8 : (type === 'symbol' ? 10 : 5);
+        State.particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * speed,
+            vy: (Math.random() - 0.5) * speed - (type === 'symbol' ? 5 : 0),
+            life: 1,
+            c: c,
+            type: type,
+            s: type === 'symbol' ? Math.random() * 10 + 10 : Math.random() * 8 + 4,
+            symbol: symbol
+        });
     }
 }
 
@@ -522,8 +771,23 @@ export function spawnCoinAnimation(x: number, y: number, amount: number) {
 
 export function addScore(pts: number) {
     const multipliers = [1, 1.2, 1.5];
-    const speedMult = multipliers[State.settings.gameSpeed];
-    State.score += Math.floor(pts * speedMult);
+    let m = multipliers[State.settings.gameSpeed];
+    if (State.activePolicy === 'aggressive') m *= 2;
+    if (State.activeEvent?.id === 'bullMarket') m *= 2;
+    const finalPts = Math.floor(pts * m);
+    State.score += finalPts;
+    GlobalStats.totalScore = (GlobalStats.totalScore || 0) + finalPts;
+
+    // Check Acquisitions
+    ACQUISITIONS.forEach(acq => {
+        if (!GlobalStats.unlockedAcquisitions.includes(acq.id) && GlobalStats.totalScore >= acq.requirement) {
+            GlobalStats.unlockedAcquisitions.push(acq.id);
+            showToast(`ACQUIRED: ${acq.name}!`, true);
+            AudioSys.sfx.tada();
+            SaveManager.saveGlobalStats();
+        }
+    });
+
     const modeKey = (State.gameMode === 'classic' ? STORAGE_KEY : STORAGE_KEY + '-' + State.gameMode);
     if (State.score > State.highScore) {
         State.highScore = State.score;
@@ -551,9 +815,14 @@ export function performUndo() {
     });
     positionQueue();
 
-    GlobalStats.inventory.undo--;
-    State.previousMove = null;
+    const insuranceLvl = GlobalStats.upgrades.insurance;
+    if (Math.random() < (insuranceLvl * 0.1)) {
+        showToast("Insurance Saved Undo!");
+    } else {
+        GlobalStats.inventory.undo--;
+    }
 
+    State.previousMove = null;
     updateHUD();
     updateTools();
     SaveManager.saveGame();
@@ -581,26 +850,78 @@ export function saveUndoState() {
     }));
 }
 
-export function placePiece(p: Piece, gx: number, gy: number) {
+export function placePiece(p: Piece, gx: number, gy: number, queueIndex: number = -1) {
+    if (queueIndex !== -1) State.queue[queueIndex] = null;
     saveUndoState();
+
+    if (State.moveCount === 0) showToast("Clear all blocks to get more!", true);
+
     for (let r = 0; r < p.rows; r++) {
         for (let c = 0; c < p.cols; c++) {
             if (p.map[r][c]) {
-                State.grid[gy + r][gx + c] = { color: p.color, scale: 1, targetScale: 1, flash: 1, yOffset: -60 };
+                const cell: any = { color: p.color, scale: 1, targetScale: 1, flash: 1, yOffset: -60, type: p.type };
+                if (p.type === 'metal') cell.health = 2;
+                if (p.type === 'multiplier') cell.mult = p.multiplierType;
+                State.grid[gy + r][gx + c] = cell;
                 spawnPart((gx + c) * CELL_SIZE + GRID_OFFSET_X + CELL_SIZE / 2, (gy + r) * CELL_SIZE + GRID_OFFSET_Y + CELL_SIZE / 2, p.color, 8, 'spark');
             }
         }
     }
-    const pts = p.map.flat().filter(x => x).length * 10 * State.level;
+    let pts = p.map.flat().filter(x => x).length * 10 * State.level;
+    if (State.frenzy.moves > 0) {
+        pts *= State.frenzy.mult;
+        State.frenzy.moves--;
+        if (State.frenzy.moves === 0) showToast("Frenzy Ended");
+    }
     addScore(pts);
     GlobalStats.blocksPlaced++;
-    if (State.gameMode === 'adventure') { State.adventure.sessionBlocks++; checkAdv(); }
+    State.moveCount++;
+    vibrate(10);
+
+    if (State.boss.active) {
+        State.boss.health -= 10;
+        State.boss.movesLeft--;
+        updateBossUI();
+        if (State.boss.health <= 0) winBoss();
+        else if (State.boss.movesLeft <= 0) triggerGO("Boss Escaped!");
+    }
+
+    if (State.taxHavenMoves > 0) {
+        State.taxHavenMoves--;
+        if (State.taxHavenMoves === 0) showToast("Tax Haven Expired");
+    }
+
+    handleElementalMove();
+    handleEventStep();
+
+    if (State.gameMode === 'adventure') {
+        State.adventure.sessionBlocks++;
+        handleAdventureObstacles();
+        checkAdv();
+    }
+
+    if (State.moveCount % 15 === 0 && !State.investor.active) {
+        triggerInvestor();
+    }
+
+    if (State.investor.active) {
+        State.investor.movesLeft--;
+        if (State.investor.movesLeft <= 0) {
+            showToast("Investor Left...");
+            State.investor.active = false;
+        }
+    }
+
     AudioSys.sfx.place(gx); vibrate(20);
-    if (!checkLines()) { State.streak = 0; if (State.gameMode === 'bomb') handleBomb(); }
+    if (!checkLines()) {
+        if (State.taxHavenMoves <= 0) State.streak = 0;
+        if (State.gameMode === 'bomb') handleBomb();
+    }
     SaveManager.saveGlobalStats();
     checkAchievements();
     SaveManager.saveGame();
     updateTools();
+    checkGO();
 }
 
 export function checkLines(): boolean {
@@ -628,24 +949,64 @@ export function execClear(fr: number[], fc: number[]) {
     let lastX = 400, lastY = 600;
     s.forEach(k => {
         const [x, y] = k.split(',').map(Number);
-        if (State.grid[y][x]) {
+        const cell = State.grid[y][x];
+        if (cell) {
             lastX = GRID_OFFSET_X + x * CELL_SIZE + CELL_SIZE / 2;
             lastY = GRID_OFFSET_Y + y * CELL_SIZE + CELL_SIZE / 2;
-            spawnPart(lastX, lastY, State.grid[y][x].color, 15, 'explosion');
+
+            if (cell.type === 'metal' && cell.health > 1) {
+                cell.health--;
+                cell.flash = 1;
+                spawnPart(lastX, lastY, '#A0A0A0', 5, 'spark');
+                return;
+            }
+
+            if (cell.type === 'gold') {
+                GlobalStats.coins += 10;
+                spawnCoinAnimation(lastX, lastY, 2);
+            }
+
+            if (cell.type === 'multiplier' && cell.mult) {
+                State.frenzy.moves = 3;
+                State.frenzy.mult = cell.mult === 'square' ? 2 : 1.5;
+                showToast(`Building Frenzy! x${State.frenzy.mult}`, true);
+            }
+
+            spawnPart(lastX, lastY, cell.color, 15, 'explosion');
+
+            // Shatter into symbols
+            spawnPart(lastX, lastY, cell.color, 3, 'symbol', '$');
+            spawnPart(lastX, lastY, '#FFD700', 2, 'symbol', '💰');
+
             State.grid[y][x] = null;
         }
     });
 
     const lines = fr.length + fc.length;
-    const pts = Math.floor(lines * 100 * (lines > 1 ? lines : 1) * (State.streak > 1 ? State.streak * 0.5 : 1) * State.level);
+    // Enhanced scoring: Better rewards for combos
+    const comboMultiplier = lines > 1 ? Math.pow(lines, 1.3) : 1;
+    const streakMultiplier = State.streak > 1 ? (1 + (State.streak * 0.3)) : 1;
+    const pts = Math.floor(lines * 100 * comboMultiplier * streakMultiplier * State.level);
     addScore(pts);
     GlobalStats.linesCleared += lines;
+
+    // Check Investor progress
+    if (State.investor.active && State.investor.type === 'lines') {
+        State.investor.progress += lines;
+        if (State.investor.progress >= State.investor.target) {
+            completeInvestor();
+        }
+    }
+
     if (State.gameMode === 'adventure') { State.adventure.sessionLines += lines; checkAdv(); }
     spawnText(`+${pts}`, lastX, lastY, '#00d2ff', 40);
 
+    // Enhanced coin rewards for combos
     let earnedCoins = lines * 5;
-    if (lines > 1) earnedCoins += lines * 5;
-    if (State.streak > 1) earnedCoins += State.streak * 2;
+    if (lines > 1) earnedCoins += lines * 10; // Increased from 5
+    if (lines >= 3) earnedCoins += lines * 15; // Bonus for 3+ lines
+    if (State.streak > 1) earnedCoins += State.streak * 3; // Increased from 2
+    if (State.streak >= 5) earnedCoins += 50; // Mega streak bonus
     GlobalStats.coins += earnedCoins;
 
     spawnCoinAnimation(lastX, lastY, earnedCoins);
@@ -653,6 +1014,107 @@ export function execClear(fr: number[], fc: number[]) {
 
     if (lines > 1) {
         spawnText(`${lines}X COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '#FFF', 80, 'combo');
+        vibrate([20, 50, 20]);
+        State.comboHeat = Math.min(State.comboHeat + 0.2, 1);
+    }
+
+    // Extra feedback for mega combos
+    if (lines >= 4) {
+        spawnText(`MEGA COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 100, '#FFD700', 60, 'combo');
+        vibrate([50, 100, 50, 100]);
+    }
+    updateLeague();
+}
+
+export function updateLeague() {
+    const thresholds = [1000, 5000, 15000, 50000, 150000];
+    const prev = GlobalStats.leagueRank;
+    for (let i = 0; i < thresholds.length; i++) {
+        if (State.score >= thresholds[i]) GlobalStats.leagueRank = i;
+    }
+    if (GlobalStats.leagueRank > prev) {
+        showToast(`PROMOTED TO ${LEAGUES[GlobalStats.leagueRank]}!`, true);
+        vibrate(200);
+    }
+    const badge = document.getElementById('league-badge');
+    const lval = document.getElementById('hud-league');
+    if (badge && lval) {
+        badge.className = `hud-group league-${LEAGUES[GlobalStats.leagueRank].toLowerCase()}`;
+        lval.innerText = LEAGUES[GlobalStats.leagueRank];
+    }
+}
+
+export function updateBossUI() {
+    const bar = document.getElementById('boss-health');
+    if (bar) bar.style.width = (State.boss.health / State.boss.maxHealth * 100) + '%';
+}
+
+function winBoss() {
+    State.boss.active = false;
+    document.getElementById('boss-ui')?.classList.add('hidden');
+    GlobalStats.bossDefeated++;
+    GlobalStats.coins += 1000;
+    showToast("BOSS DEFEATED! +1000 🟡", true);
+    vibrate([100, 50, 100, 50, 200]);
+}
+
+export function spawnBoss(name: string, hp: number) {
+    State.boss = { active: true, name, health: hp, maxHealth: hp, movesLeft: 15 + Math.floor(hp / 10) };
+    document.getElementById('boss-ui')?.classList.remove('hidden');
+    const bn = document.getElementById('boss-name');
+    if (bn) bn.innerText = name;
+    updateBossUI();
+    showToast(`BOSS WARNING: ${name}`, true);
+    vibrate(500);
+}
+
+export function triggerInvestor() {
+    const types: ('lines' | 'score' | 'blocks')[] = ['lines', 'score', 'blocks'];
+    const type = types[Math.floor(Math.random() * types.length)];
+    const targets = { lines: 3, score: 500, blocks: 15 };
+    State.investor = {
+        active: true,
+        type: type,
+        target: targets[type],
+        progress: 0,
+        movesLeft: 12,
+        reward: 500 + (State.level * 100)
+    };
+    showToast("Investor Goal: " + type.toUpperCase(), true);
+    AudioSys.sfx.tada();
+}
+
+export function completeInvestor() {
+    GlobalStats.coins += State.investor.reward;
+    spawnCoinAnimation(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 20);
+    showToast(`Investor Happy! +${State.investor.reward} 🟡`, true);
+    State.investor.active = false;
+    SaveManager.saveGlobalStats();
+}
+
+export function handleAdventureObstacles() {
+    if (State.gameMode !== 'adventure') return;
+
+    // Every 5 moves, spawn Overgrowth
+    if (State.moveCount % 5 === 0) {
+        let empty = [];
+        for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (!State.grid[y][x]) empty.push({ x, y });
+        if (empty.length) {
+            const p = empty[Math.floor(Math.random() * empty.length)];
+            State.grid[p.y][p.x] = { color: '#2ecc71', scale: 0, targetScale: 1, type: 'vine' };
+            showToast("Overgrowth spreading!", true);
+        }
+    }
+
+    // Every level change or every 10 moves, spawn Cracked Tiles
+    if (State.moveCount % 10 === 0) {
+        let empty = [];
+        for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (!State.grid[y][x]) empty.push({ x, y });
+        if (empty.length) {
+            const p = empty[Math.floor(Math.random() * empty.length)];
+            State.grid[p.y][p.x] = { color: 'transparent', scale: 1, targetScale: 1, type: 'cracked' };
+            showToast("Ground is cracking...", true);
+        }
     }
 }
 
@@ -668,7 +1130,7 @@ export function checkAdv() {
         State.isEnding = true; AudioSys.sfx.levelup();
         if (GlobalStats.adventureMaxLevel === State.adventure.levelId) GlobalStats.adventureMaxLevel++;
         SaveManager.saveGlobalStats();
-        triggerGO("Level Cleared!");
+        triggerGO("Level Cleared!", true);
     }
 }
 
@@ -702,6 +1164,10 @@ export function checkGO() {
     let cm = false;
     for (let p of State.queue) if (p) for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (canPlace(p, x, y)) cm = true;
     if (!cm) {
+        // Double check we actually have pieces to prevent race conditions
+        const activePieces = State.queue.filter(p => p !== null).length;
+        if (activePieces === 0) { fillQueue(); return; }
+
         if (State.gameMode === 'zen') {
             showToast("Zen Refresh...", true);
             setTimeout(() => {
@@ -715,7 +1181,28 @@ export function checkGO() {
     }
 }
 
-export function triggerGO(msg: string) {
+export function triggerGO(msg: string, isWin: boolean = false) {
+    // Policy Effect: Tax Shield (Bailout)
+    if (State.activePolicy === 'taxShield' && State.bailoutsLeft > 0) {
+        State.bailoutsLeft--;
+        showToast(`TAX BAILOUT!`, true);
+
+        // Trigger Sweep Animation
+        const sweep = document.getElementById('bailout-sweep');
+        if (sweep) {
+            sweep.classList.remove('active');
+            void sweep.offsetWidth; // Force reflow
+            sweep.classList.add('active');
+        }
+
+        State.grid = State.grid.map(row => row.map(() => null));
+        fillQueue(false);
+        updateHUD();
+        vibrate([100, 50, 100, 50, 200]);
+        AudioSys.sfx.levelup();
+        return;
+    }
+
     State.isGameOver = true;
     document.body.classList.remove('in-game');
     const header = document.getElementById('game-header');
@@ -729,19 +1216,46 @@ export function triggerGO(msg: string) {
 
     if (go) {
         const title = go.querySelector('.title-large') as HTMLElement;
-        if (title) title.innerText = msg;
+        if (title) title.innerText = isWin ? "VICTORY!" : msg;
+
+        const btn = document.getElementById('btn-restart');
+        if (btn) {
+            if (isWin) {
+                btn.innerText = "Next Level";
+                btn.onclick = () => {
+                    document.getElementById('gameover-overlay')?.classList.add('hidden');
+                    State.adventure.levelId++;
+                    // Basic loop protection or finish check
+                    if (State.adventure.levelId >= ADVENTURE_LEVELS.length) {
+                        showToast("All Levels Completed!");
+                        State.adventure.levelId = 0;
+                    }
+                    (window as any).startGame('adventure', State.adventure.levelId);
+                };
+            } else {
+                btn.innerText = "Try Again";
+                btn.onclick = () => {
+                    document.getElementById('gameover-overlay')?.classList.add('hidden');
+                    (window as any).startGame(State.gameMode === 'classic' ? 'new' : State.gameMode, State.adventure.levelId);
+                };
+            }
+        }
 
         // Phase 4: Refined Game Over (Stats summary)
         const summary = document.createElement('div');
         summary.className = 'glass-panel';
         summary.style.marginTop = '20px';
         summary.innerHTML = `
-            <div style="font-size:14px; opacity:0.7; margin-bottom:10px">SESSION STATS</div>
+            <div style="font-size:14px; opacity:0.7; margin-bottom:10px">${isWin ? 'LEVEL COMPLETE' : 'SESSION STATS'}</div>
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px">
+                <div>Score: <b>${State.score}</b></div>
                 <div>Blocks: <b>${GlobalStats.blocksPlaced}</b></div>
                 <div>Lines: <b>${GlobalStats.linesCleared}</b></div>
+                ${isWin ? '<div style="grid-column:span 2; color:#4caf50; font-weight:bold; margin-top:5px">REWARD: +500 🟡</div>' : ''}
             </div>
         `;
+        if (isWin) GlobalStats.coins += 500;
+
         const content = go.querySelector('.overlay-content');
         if (content) {
             const existing = content.querySelector('.summary-panel');
@@ -754,7 +1268,7 @@ export function triggerGO(msg: string) {
     const inputOverlay = document.getElementById('input-overlay');
     const inputScore = document.getElementById('input-score');
 
-    if (State.score > 0 && (State.leaderboard.length < 5 || State.score > State.leaderboard[State.leaderboard.length - 1].score)) {
+    if (!isWin && State.score > 0 && (State.leaderboard.length < 5 || State.score > State.leaderboard[State.leaderboard.length - 1].score)) {
         if (inputOverlay) inputOverlay.classList.remove('hidden');
         if (inputScore) inputScore.innerText = State.score.toString();
     } else {
@@ -767,14 +1281,30 @@ export function checkLvl(l: number) {
     const nl = Math.floor(State.linesClearedTotal / 10) + 1;
     if (nl > State.level) {
         State.level = nl;
-        GlobalStats.inventory.hammer++;
-        if (nl % 3 === 0) GlobalStats.inventory.bomb++;
+
+        // Enhanced rewards system
+        GlobalStats.inventory.hammer += 2; // Increased from 1
+
+        if (nl % 2 === 0) GlobalStats.inventory.reroll++; // Reroll every 2 levels
+        if (nl % 3 === 0) GlobalStats.inventory.bomb++; // Bomb every 3 levels
+        if (nl % 5 === 0) { // Special bonus every 5 levels
+            GlobalStats.inventory.undo++;
+            GlobalStats.coins += 100;
+            showToast(`Level ${nl}! Bonus Rewards!`, true);
+        }
+
         updateTools();
         AudioSys.sfx.levelup();
         const indicator = document.getElementById('level-up-indicator');
         if (indicator) {
             indicator.classList.add('show');
             setTimeout(() => indicator.classList.remove('show'), 1500);
+        }
+
+        // Visual celebration for milestone levels
+        if (nl % 10 === 0) {
+            spawnText(`LEVEL ${nl}!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '#FFD700', 100, 'combo');
+            vibrate([100, 50, 100, 50, 200]);
         }
     }
 }
@@ -796,21 +1326,29 @@ export function initGame(mode: string, lvlIdx: number = 0) {
     State.isPaused = false; State.isEnding = false; State.isGameOver = false;
     State.particles = []; State.floatingTexts = [];
     State.clearingRows = []; State.clearingCols = []; State.activeTool = null; State.previousMove = null;
+    State.score = 0; State.level = 1; State.streak = 0; State.bombCounter = 8;
+    State.adventure.levelId = 0; State.adventure.progress = 0;
 
-    const header = document.getElementById('game-header');
-    if (header) header.classList.remove('hidden');
+    State.adventure.levelId = 0; State.adventure.progress = 0;
+
     document.body.classList.add('in-game');
+
+    const canvas = document.getElementById('gameCanvas');
+    if (canvas) {
+        if (State.activePolicy === 'taxShield') canvas.classList.add('grid-hardened');
+        else canvas.classList.remove('grid-hardened');
+    }
 
     if (mode === 'zen') State.gameMode = 'zen';
     else if (mode === 'adventure') {
         State.gameMode = 'adventure';
         State.adventure.levelId = lvlIdx; State.adventure.progress = 0;
         State.adventure.sessionBlocks = 0; State.adventure.sessionLines = 0;
-        State.level = Math.floor(lvlIdx / 3) + 1; // Difficulty scales with levels
+        State.level = Math.floor(lvlIdx / 3) + 1;
     }
     else if (mode === 'bomb') {
         State.gameMode = 'bomb';
-        State.bombCounter = 5; // More intense
+        State.bombCounter = 5;
     }
     else if (mode !== 'resume') State.gameMode = 'classic';
 
@@ -828,33 +1366,145 @@ export function initGame(mode: string, lvlIdx: number = 0) {
     const modeKey = (State.gameMode === 'classic' ? STORAGE_KEY : STORAGE_KEY + '-' + State.gameMode);
     State.highScore = parseInt(localStorage.getItem(modeKey) || '0');
 
-    if (mode === 'resume' && SaveManager.loadGame()) {
-        State.tutorial.active = false; positionQueue(); updateHUD(); showToast("Welcome Back!");
-    } else {
-        State.grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
-        State.score = 0; State.displayedScore = 0; State.level = 1; State.streak = 0; State.bombCounter = 8;
-        State.tutorial.active = (mode === 'tutorial'); State.tutorial.step = 0;
+    if (mode === 'resume') {
+        if (SaveManager.loadGame()) {
+            State.tutorial.active = false;
 
-        document.body.style.filter = 'hue-rotate(0deg)';
-        if (State.tutorial.active) {
-            setupTutorial(0);
-            const pow = document.getElementById('powerup-ui');
-            if (pow) pow.classList.add('hidden');
+            // Ensure queue pieces are properly positioned after load
+            positionQueue();
+
+            // Validate queue state
+            if (!State.queue || State.queue.length === 0 || State.queue.every(p => p === null)) {
+                fillQueue();
+            }
+
+            updateHUD();
+            showToast("Welcome Back!");
+            AudioSys.init(); AudioSys.startMusic();
+            collectPassiveIncome();
+            updateTools(); // Ensure tools are updated on resume
+
+            // Force a re-render
+            const canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
+            if (canvas) {
+                const ctx = canvas.getContext('2d');
+                if (ctx) gameLoop(ctx);
+            }
+            return; // EXIT HERE on success
+        } else {
+            showToast("Save Data Corrupted", true);
+            // Fall through to new game
+            State.gameMode = 'classic'; // Default back
         }
-        else {
-            fillQueue();
-            GlobalStats.gamesPlayed++;
-            SaveManager.saveGlobalStats();
-            const pow = document.getElementById('powerup-ui');
-            if (State.gameMode !== 'zen') { if (pow) pow.classList.remove('hidden'); }
-            else { if (pow) pow.classList.add('hidden'); showToast("Zen Mode 🌸"); }
-            if (State.gameMode === 'bomb') showToast("Defuse bombs!", true);
-            if (State.gameMode === 'adventure') showToast(ADVENTURE_LEVELS[State.adventure.levelId].title, true);
-        }
-        updateHUD();
     }
+
+    // New Game Setup
+    State.isGameOver = false;
+    State.isPaused = false;
+    State.score = 0;
+    State.displayedScore = 0;
+    State.moveCount = 0;
+    State.level = 1;
+    State.linesClearedTotal = 0;
+    State.streak = 0;
+    State.grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+    State.queue = [];
+    State.boss.active = false;
+    State.comboHeat = 0;
+    State.frenzy.moves = 0;
+    State.activeEvent = null;
+    State.taxHavenMoves = 0;
+
+    const bui = document.getElementById('boss-ui');
+    if (bui) bui.classList.add('hidden');
+
+    // Explicitly show the HUD
+    const headerEl = document.getElementById('game-header');
+    if (headerEl) headerEl.classList.remove('hidden');
+
+    State.tutorial.active = (mode === 'tutorial'); State.tutorial.step = 0;
+
+    document.body.style.filter = 'hue-rotate(0deg)';
+    if (State.tutorial.active) {
+        setupTutorial(0);
+        const pow = document.getElementById('powerup-ui');
+        if (pow) pow.classList.add('hidden');
+    }
+    else {
+        fillQueue();
+        GlobalStats.gamesPlayed++;
+        SaveManager.saveGlobalStats();
+        const pow = document.getElementById('powerup-ui');
+        if (State.gameMode !== 'zen') { if (pow) pow.classList.remove('hidden'); }
+        else { if (pow) pow.classList.add('hidden'); showToast("Zen Mode 🌸"); }
+        if (State.gameMode === 'bomb') showToast("Defuse bombs!", true);
+        if (State.gameMode === 'adventure') {
+            showToast(ADVENTURE_LEVELS[State.adventure.levelId].title, true);
+            if (State.adventure.levelId === 9) spawnBoss("TOY MASTER", 100);
+        }
+    }
+    updateHUD();
+
     updateTools();
+    AudioSys.init();
     AudioSys.startMusic();
+    collectPassiveIncome();
+}
+
+export function collectPassiveIncome() {
+    const now = Date.now();
+    const diffHours = (now - GlobalStats.lastPassiveCollection) / (1000 * 60 * 60);
+    if (diffHours < 0.1) return; // Wait at least 6 minutes
+
+    let rate = 0;
+    for (let i = 0; i < GlobalStats.hqLevel; i++) {
+        rate += HQ_UPGRADES[i].incomeRate;
+    }
+    if (State.activePolicy === 'leanStartup') rate *= 3;
+
+    if (rate > 0) {
+        const income = Math.floor(diffHours * rate);
+        if (income > 0) {
+            GlobalStats.coins += income;
+            showToast(`Toy Box Generated +${income} 🟡`, true);
+            SaveManager.saveGlobalStats();
+            updateHUD();
+        }
+    }
+    GlobalStats.lastPassiveCollection = now;
+}
+
+export function performMerger() {
+    // Combine queue pieces into one super piece (e.g., piece 0 and 1)
+    if (State.queue[0] && State.queue[1]) {
+        showToast("Mixing Toys...");
+        State.queue[0].type = 'gold'; // Upgrade the first one
+        State.queue[1] = null;
+        GlobalStats.inventory.takeover--; // Using 'takeover' for naming consistency in inventory call
+        positionQueue();
+        updateTools();
+    }
+}
+
+export function performTakeover() {
+    showToast("Magic Splash!", true);
+    for (let r = 2; r < 5; r++) {
+        for (let c = 2; c < 5; c++) {
+            if (State.grid[r][c]) {
+                State.grid[r][c].type = 'gold';
+                State.grid[r][c].color = '#FFD700';
+            }
+        }
+    }
+    GlobalStats.inventory.takeover--;
+    updateHUD();
+}
+
+export function performTaxHaven() {
+    showToast("Bubble Shield!", true);
+    State.taxHavenMoves = 10;
+    GlobalStats.inventory.taxHaven--;
+    updateTools();
 }
 
 export function setupTutorial(s: number) {
@@ -882,5 +1532,110 @@ export function buyItem(type: keyof Inventory, price: number) {
     } else {
         showToast("Not enough Coins!", true);
         AudioSys.sfx.invalid();
+    }
+}
+
+export function buyBailout() {
+    const cost = 10000;
+    if (GlobalStats.coins >= cost) {
+        GlobalStats.coins -= cost;
+        State.bailoutsLeft++;
+        AudioSys.sfx.coin();
+        showToast("EXTRA LIFE READY!");
+        SaveManager.saveGlobalStats();
+        updateHUD();
+    } else {
+        showToast("Too expensive!", true);
+        AudioSys.sfx.invalid();
+    }
+}
+
+export function buyUpgrade(id: string) {
+    const upgrade = UPGRADES.find(u => u.id === id);
+    if (!upgrade) return;
+    const currentLvl = (GlobalStats.upgrades as any)[id];
+    if (currentLvl >= upgrade.maxLevel) {
+        showToast("Max Level Reached!");
+        return;
+    }
+    const cost = upgrade.costs[currentLvl];
+    if (GlobalStats.coins >= cost) {
+        GlobalStats.coins -= cost;
+        (GlobalStats.upgrades as any)[id]++;
+        AudioSys.sfx.coin();
+        showToast(`${upgrade.name} Upgraded!`, true);
+        SaveManager.saveGlobalStats();
+        updateHUD();
+        // Trigger UI update if window.updateUpgradeUI exists
+        if ((window as any).updateUpgradeUI) (window as any).updateUpgradeUI();
+    } else {
+        showToast("Not enough Coins!", true);
+        AudioSys.sfx.invalid();
+    }
+}
+
+function handleElementalMove() {
+    for (let x = 0; x < COLS; x++) {
+        for (let y = ROWS - 2; y >= 0; y--) {
+            const cell = State.grid[y][x];
+            if (cell && cell.type === 'liquid' && !State.grid[y + 1][x]) {
+                State.grid[y + 1][x] = cell;
+                State.grid[y][x] = null;
+            }
+        }
+    }
+    for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+            const cell = State.grid[y][x];
+            if (!cell) continue;
+            if (cell.type === 'inflation') {
+                cell.timer = (cell.timer || 0) + 1;
+                if (cell.timer >= 5) { growInflation(x, y); cell.timer = 0; }
+            } else if (cell.type === 'crypto') {
+                const types: any[] = ['gold', 'metal', 'multiplier', 'normal'];
+                cell.type = types[Math.floor(Math.random() * types.length)];
+                if (cell.type === 'gold') cell.color = '#FFD700';
+                else if (cell.type === 'metal') cell.health = 2;
+            }
+        }
+    }
+}
+function growInflation(x: number, y: number) { const dirs = [{ dx: 1, dy: 0 }, { dx: -1, dy: 0 }, { dx: 0, dy: 1 }, { dx: 0, dy: -1 }]; dirs.forEach(d => { const nx = x + d.dx, ny = y + d.dy; if (nx >= 0 && nx < COLS && ny >= 0 && ny < ROWS && !State.grid[ny][nx]) { State.grid[ny][nx] = { color: '#ff4b2b', scale: 0, targetScale: 1, type: 'inflation', timer: 0 }; } }); }
+
+export function triggerRandomEvent() {
+    if (State.activeEvent) return;
+    const e = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+    State.activeEvent = e;
+    State.eventTimer = e.duration;
+    showToast(`BREAKING NEWS: ${e.name}`, true);
+    vibrate([50, 100, 50]);
+    if (e.id === 'crash') {
+        fillQueue(false);
+        State.activeEvent = null;
+    }
+    if (e.id === 'sabotage') {
+        let count = 0;
+        for (let i = 0; i < 3; i++) {
+            let rx = Math.floor(Math.random() * COLS), ry = Math.floor(Math.random() * ROWS);
+            if (!State.grid[ry][rx]) {
+                State.grid[ry][rx] = { color: '#ff4b2b', scale: 0, targetScale: 1, type: 'metal', health: 2 };
+                count++;
+            }
+        }
+        if (count > 0) showToast('Rival Sabotage Detected!');
+        State.activeEvent = null;
+    }
+    updateHUD();
+}
+function handleEventStep() {
+    if (!State.activeEvent) {
+        if (Math.random() < 0.05) triggerRandomEvent();
+        return;
+    }
+    State.eventTimer--;
+    if (State.eventTimer <= 0) {
+        showToast(`Event Ended: ${State.activeEvent.name}`);
+        State.activeEvent = null;
+        updateHUD();
     }
 }
