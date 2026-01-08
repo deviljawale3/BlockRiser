@@ -49,9 +49,10 @@ export interface Policy {
 export interface AdventureLevel {
     id: number;
     title: string;
-    goalType: 'lines' | 'score' | 'blocks';
+    goalType: 'lines' | 'score' | 'blocks' | 'gems';
     target: number;
     desc: string;
+    board?: (number | string | null)[][];
 }
 
 export interface Acquisition {
@@ -97,8 +98,8 @@ export const STATS_KEY = 'blockriser-global-stats';
 export const LEADERBOARD_KEY = 'blockriser-leaderboard';
 
 export const PALETTES = [
-    // Standard Painted Wood (Primary)
-    ['#D32F2F', '#388E3C', '#1976D2', '#FBC02D', '#F57C00', '#7B1FA2', '#0288D1'],
+    // Block Blast Primary (Vibrant & Glossy)
+    ['#FF3B30', '#4CD964', '#007AFF', '#FFCC00', '#FF9500', '#5856D6', '#5AC8FA', '#FF2D55'],
     // Pastel Paint
     ['#E57373', '#81C784', '#64B5F6', '#FFF176', '#FFB74D', '#BA68C8', '#4DD0E1'],
     // Dark Stain
@@ -122,33 +123,142 @@ export const THEMES: Theme[] = [
 ];
 
 export const SHAPES: Shape[] = [
-    { id: '1x1', map: [[1]] }, { id: '2x1', map: [[1, 1]] }, { id: '3x1', map: [[1, 1, 1]] }, { id: '2x2', map: [[1, 1], [1, 1]] },
-    { id: 'L1', map: [[1, 0], [1, 0], [1, 1]] }, { id: 'L2', map: [[0, 1], [0, 1], [1, 1]] }, { id: 'T1', map: [[1, 1, 1], [0, 1, 0]] },
-    { id: 'Z1', map: [[1, 1, 0], [0, 1, 1]] }, { id: 'S1', map: [[0, 1, 1], [1, 1, 0]] }, { id: '3x3L', map: [[1, 1, 1], [1, 0, 0], [1, 0, 0]] },
-    { id: 'U', map: [[1, 0, 1], [1, 1, 1]] }, { id: '4x1', map: [[1, 1, 1, 1]] }, { id: 'Plus', map: [[0, 1, 0], [1, 1, 1], [0, 1, 0]] },
-    { id: 'BigT', map: [[1, 1, 1], [0, 1, 0], [0, 1, 0]] }, { id: 'Diag3', map: [[1, 0, 0], [0, 1, 0], [0, 0, 1]] },
-    { id: 'H', map: [[1, 0, 1], [1, 1, 1], [1, 0, 1]] }, { id: 'X5', map: [[1, 0, 1], [0, 1, 0], [1, 0, 1]] },
-    { id: 'Stairs4', map: [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]] }, { id: 'Tank', map: [[0, 1, 0], [1, 1, 1], [1, 0, 1]] },
-    { id: 'U_big', map: [[1, 0, 1], [1, 0, 1], [1, 1, 1]] }, { id: 'T_long', map: [[1, 1, 1], [0, 1, 0], [0, 1, 0]] },
-    { id: 'W_shape', map: [[1, 0, 0], [1, 1, 0], [0, 1, 1]] },
-    { id: 'Glider', map: [[0, 1, 0], [0, 0, 1], [1, 1, 1]] },
-    { id: 'J_long', map: [[0, 1], [0, 1], [1, 1]] },
-    { id: 'L_long', map: [[1, 0], [1, 0], [1, 1]] },
-    { id: 'Donut', map: [[1, 1, 1], [1, 0, 1], [1, 1, 1]] },
-    { id: 'Anchor', map: [[1, 0, 1], [1, 1, 1], [0, 1, 0]] },
-    { id: 'Bird', map: [[0, 1, 0], [1, 1, 1], [1, 0, 1]] },
-    { id: 'C_big', map: [[1, 1, 1], [1, 0, 0], [1, 1, 1]] },
-    { id: 'Tree', map: [[0, 1, 0], [0, 1, 0], [1, 1, 1], [0, 1, 0]] },
-    { id: 'Zigzag4', map: [[1, 1, 0, 0], [0, 1, 1, 1]] }
+    { id: '1x1', map: [[1]] },
+    { id: '2x1', map: [[1], [1]] },
+    { id: '1x2', map: [[1, 1]] },
+    { id: '3x1', map: [[1], [1], [1]] },
+    { id: '1x3', map: [[1, 1, 1]] },
+    { id: '4x1', map: [[1], [1], [1], [1]] },
+    { id: '1x4', map: [[1, 1, 1, 1]] },
+    { id: '5x1', map: [[1], [1], [1], [1], [1]] },
+    { id: '1x5', map: [[1, 1, 1, 1, 1]] },
+    { id: '2x2', map: [[1, 1], [1, 1]] },
+    { id: '3x3', map: [[1, 1, 1], [1, 1, 1], [1, 1, 1]] },
+    // T-Piece orientations
+    { id: 'T2', map: [[1, 1, 1], [0, 1, 0]] },
+    { id: 'T4', map: [[0, 1, 0], [1, 1, 1]] },
+    { id: 'T1', map: [[0, 1], [1, 1], [0, 1]] },
+    { id: 'T3', map: [[1, 0], [1, 1], [1, 0]] },
+    // L-Piece orientations
+    { id: 'L1', map: [[1, 0], [1, 0], [1, 1]] },
+    { id: 'L2', map: [[1, 1, 1], [1, 0, 0]] },
+    { id: 'L3_v2', map: [[1, 1], [0, 1], [0, 1]] },
+    { id: 'L4', map: [[0, 0, 1], [1, 1, 1]] },
+    // J-Piece orientations
+    { id: 'J1', map: [[0, 1], [0, 1], [1, 1]] },
+    { id: 'J2', map: [[1, 0, 0], [1, 1, 1]] },
+    { id: 'J3', map: [[1, 1], [1, 0], [1, 0]] },
+    { id: 'J4', map: [[1, 1, 1], [0, 0, 1]] },
+    // S-Piece orientations
+    { id: 'S1', map: [[0, 1, 1], [1, 1, 0]] },
+    { id: 'S2', map: [[1, 0], [1, 1], [0, 1]] },
+    // Z-Piece orientations
+    { id: 'Z1', map: [[1, 1, 0], [0, 1, 1]] },
+    { id: 'Z2', map: [[0, 1], [1, 1], [1, 0]] },
+    // Small Corner (L3) orientations
+    { id: 'SC1', map: [[1, 1], [1, 0]] },
+    { id: 'SC2', map: [[1, 1], [0, 1]] },
+    { id: 'SC3', map: [[1, 0], [1, 1]] },
+    { id: 'SC4', map: [[0, 1], [1, 1]] },
+    // Large Corner (L5) orientations
+    { id: 'LC1', map: [[1, 1, 1], [1, 0, 0], [1, 0, 0]] },
+    { id: 'LC2', map: [[1, 1, 1], [0, 0, 1], [0, 0, 1]] },
+    { id: 'LC3', map: [[1, 0, 0], [1, 0, 0], [1, 1, 1]] },
+    { id: 'LC4', map: [[0, 0, 1], [0, 0, 1], [1, 1, 1]] },
+    { id: 'Plus', map: [[0, 1, 0], [1, 1, 1], [0, 1, 0]] }
 ];
 
 export const ADVENTURE_LEVELS: AdventureLevel[] = [
-    { id: 0, title: "Baby Steps", goalType: 'lines', target: 3, desc: "Clear 3 Lines" }, { id: 1, title: "Point Chaser", goalType: 'score', target: 500, desc: "Score 500 Pts" },
-    { id: 2, title: "Brick Layer", goalType: 'blocks', target: 20, desc: "Place 20 Blocks" }, { id: 3, title: "Line Dancer", goalType: 'lines', target: 10, desc: "Clear 10 Lines" },
-    { id: 4, title: "High Flyer", goalType: 'score', target: 2000, desc: "Score 2000 Pts" }, { id: 5, title: "Marathon", goalType: 'blocks', target: 50, desc: "Place 50 Blocks" },
-    { id: 6, title: "Double Trouble", goalType: 'lines', target: 20, desc: "Clear 20 Lines" }, { id: 7, title: "Grand Master", goalType: 'score', target: 5000, desc: "Score 5000 Pts" },
-    { id: 8, title: "Brick Titan", goalType: 'blocks', target: 100, desc: "Place 100 Blocks" },
-    { id: 9, title: "The Rival", goalType: 'lines', target: 1, desc: "Settle the Score (BOSS)" }
+    {
+        id: 0, title: "Garden Gate", goalType: 'lines', target: 5, desc: "Clear 5 Lines", board: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 1, 1, 1]
+        ]
+    },
+    {
+        id: 1, title: "Sweet Heart", goalType: 'gems', target: 8, desc: "Collect 8 Gems", board: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 'G', 0, 0, 'G', 0, 0], [0, 1, 1, 1, 1, 1, 1, 0], [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1], [0, 1, 1, 1, 1, 1, 1, 0], [0, 0, 1, 1, 1, 1, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0]
+        ]
+    },
+    {
+        id: 2, title: "Sunny Smile", goalType: 'score', target: 1500, desc: "Score 1500 Pts", board: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 0, 0, 1, 1, 0], [0, 1, 1, 0, 0, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 0, 0, 0, 0, 1, 1], [0, 1, 1, 1, 1, 1, 1, 0], [0, 0, 1, 1, 1, 1, 0, 0]
+        ]
+    },
+    {
+        id: 3, title: "Grid Lock", goalType: 'lines', target: 10, desc: "Clear 10 Lines", board: [
+            [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1],
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1]
+        ]
+    },
+    {
+        id: 4, title: "The Pillar", goalType: 'blocks', target: 40, desc: "Place 40 Blocks", board: [
+            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 1, 1, 0, 1, 1], [1, 1, 0, 1, 1, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1]
+        ]
+    },
+    {
+        id: 5, title: "Gem Valley", goalType: 'gems', target: 25, desc: "Collect 25 Gems", board: [
+            ['G', 0, 0, 0, 0, 0, 0, 'G'], [0, 'G', 0, 1, 1, 0, 'G', 0], [0, 0, 'G', 1, 1, 'G', 0, 0], [1, 1, 1, 'G', 'G', 1, 1, 1],
+            [1, 1, 1, 'G', 'G', 1, 1, 1], [0, 0, 'G', 1, 1, 'G', 0, 0], [0, 'G', 0, 1, 1, 0, 'G', 0], ['G', 0, 0, 0, 0, 0, 0, 'G']
+        ]
+    },
+    {
+        id: 6, title: "Mega Wall", goalType: 'score', target: 3000, desc: "Score 3000 Pts", board: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    },
+    {
+        id: 7, title: "Crossroads", goalType: 'lines', target: 15, desc: "Clear 15 Lines", board: [
+            [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0]
+        ]
+    },
+    {
+        id: 8, title: "Emerald Reef", goalType: 'gems', target: 40, desc: "Collect 40 Gems", board: [
+            ['G', 'G', 0, 0, 0, 0, 'G', 'G'], ['G', 1, 'G', 0, 0, 'G', 1, 'G'], [0, 'G', 1, 'G', 'G', 1, 'G', 0], [0, 0, 'G', 1, 1, 'G', 0, 0],
+            [0, 0, 'G', 1, 1, 'G', 0, 0], [0, 'G', 1, 'G', 'G', 1, 'G', 0], ['G', 1, 'G', 0, 0, 'G', 1, 'G'], ['G', 'G', 0, 0, 0, 0, 'G', 'G']
+        ]
+    },
+    {
+        id: 9, title: "The Spiral", goalType: 'score', target: 5000, desc: "Score 5000 Pts", board: [
+            [1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 1, 1, 1, 0, 1], [1, 0, 1, 0, 0, 1, 0, 1],
+            [1, 0, 1, 1, 1, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    },
+    {
+        id: 10, title: "Dual Pillars", goalType: 'lines', target: 30, desc: "Clear 30 Lines", board: [
+            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1],
+            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+    },
+    {
+        id: 11, title: "Gem Maze", goalType: 'gems', target: 55, desc: "Collect 55 Gems", board: [
+            ['G', 'G', 'G', 0, 0, 'G', 'G', 'G'], ['G', 0, 0, 0, 0, 0, 0, 'G'], ['G', 0, 'G', 'G', 'G', 'G', 0, 'G'], ['G', 0, 'G', 0, 0, 'G', 0, 'G'],
+            [1, 0, 'G', 0, 0, 'G', 0, 1], ['G', 0, 'G', 'G', 'G', 'G', 0, 'G'], ['G', 0, 0, 0, 0, 0, 0, 'G'], ['G', 'G', 'G', 0, 0, 'G', 'G', 'G']
+        ]
+    },
+    {
+        id: 12, title: "Imperial Wall", goalType: 'blocks', target: 150, desc: "Place 150 Blocks", board: [
+            [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]
+        ]
+    },
+    {
+        id: 13, title: "Diamond Vault", goalType: 'gems', target: 70, desc: "Collect 70 Gems", board: [
+            [1, 1, 1, 'G', 'G', 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], ['G', 0, 'G', 1, 1, 'G', 0, 'G'],
+            ['G', 0, 'G', 1, 1, 'G', 0, 'G'], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 'G', 'G', 1, 1, 1]
+        ]
+    },
+    {
+        id: 14, title: "Toy Master", goalType: 'lines', target: 1, desc: "Final Showdown!", board: [
+            [1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 'G', 1, 1, 'G', 0, 1],
+            [1, 0, 'G', 1, 1, 'G', 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1]
+        ]
+    }
 ];
 
 export const ACQUISITIONS: Acquisition[] = [
@@ -264,24 +374,19 @@ export class Piece {
             this.type = 'crypto';
         }
 
-        // Policy Effect: Aggressive Expansion (Larger Pieces)
+        // Piece enlargement disabled to match standard game mechanics
+        /*
         if (State.activePolicy === 'aggressive' && Math.random() > 0.5) {
             this.map.push(Array(this.cols).fill(1));
             this.rows++;
         }
+        */
     }
 
     rotate() {
-        const nm = Array(this.cols).fill(null).map(() => Array(this.rows).fill(0));
-        for (let r = 0; r < this.rows; r++) {
-            for (let c = 0; c < this.cols; c++) {
-                nm[c][this.rows - 1 - r] = this.map[r][c];
-            }
-        }
-        this.map = nm;
-        [this.rows, this.cols] = [this.cols, this.rows];
-        this.rotated = true;
-        this.visualRotation -= Math.PI / 2;
+        // Rotation disabled to match Block Blast mechanics
+        showToast("Rotation not allowed!");
+        return;
     }
 }
 
@@ -351,7 +456,7 @@ export const State = {
     bombCounter: 0,
     currentTheme: 'classic',
     activeTool: null as string | null,
-    adventure: { levelId: 0, progress: 0, sessionBlocks: 0, sessionLines: 0 },
+    adventure: { levelId: 0, progress: 0, sessionBlocks: 0, sessionLines: 0, sessionGems: 0 },
     tutorial: { active: false, step: 0 },
     settings: { highQuality: true, vibration: true, gameSpeed: 0, music: true, sfx: true },
     screenShake: 0,
@@ -441,32 +546,43 @@ export const AudioSys = {
         rotate: () => AudioSys.playTone(800, 'triangle', 0.1, 0.05, 1200),
         place: (col: number = 0) => { const n = [261, 293, 329, 392, 440, 523, 587, 659]; AudioSys.playTone(n[col % 8], 'sine', 0.15, 0.2); },
         invalid: () => AudioSys.playTone(150, 'sawtooth', 0.2, 0.1, 100),
-        clear: (c: number) => { for (let i = 0; i < Math.min(c + 1, 4); i++) setTimeout(() => AudioSys.playTone(440 * (1 + i * 0.25), 'sine', 0.4, 0.15), i * 60); },
+        clear: (c: number) => {
+            for (let i = 0; i < Math.min(c, 6); i++) {
+                setTimeout(() => AudioSys.playTone(700 * (1 + i * 0.1), 'sine', 0.12, 0.4), i * 40);
+            }
+        },
         levelup: () => {
             const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
             notes.forEach((n, i) => setTimeout(() => {
-                AudioSys.playTone(n, 'triangle', 0.3, 0.1);
-                AudioSys.playTone(n / 2, 'sine', 0.4, 0.1);
-            }, i * 80));
+                AudioSys.playTone(n, 'triangle', 0.4, 0.3);
+                AudioSys.playTone(n / 2, 'sine', 0.5, 0.2);
+            }, i * 70));
         },
         gameover: () => {
             if (!AudioSys.ctx) return;
             const t = AudioSys.ctx.currentTime;
-            const o = AudioSys.ctx.createOscillator();
-            const g = AudioSys.ctx.createGain();
+            const o = AudioSys.ctx.createOscillator(), g = AudioSys.ctx.createGain();
             o.type = 'sawtooth';
-            o.frequency.setValueAtTime(150, t);
-            o.frequency.exponentialRampToValueAtTime(10, t + 1.0);
-            g.gain.setValueAtTime(0.5, t);
-            g.gain.exponentialRampToValueAtTime(0.01, t + 1.0);
+            o.frequency.setValueAtTime(120, t);
+            o.frequency.exponentialRampToValueAtTime(10, t + 1.2);
+            g.gain.setValueAtTime(0.6, t);
+            g.gain.exponentialRampToValueAtTime(0.01, t + 1.2);
             o.connect(g); g.connect(AudioSys.ctx.destination);
-            o.start(); o.stop(t + 1.1);
+            o.start(); o.stop(t + 1.3);
         },
-        powerup: () => AudioSys.playTone(880, 'sine', 0.3, 0.1, 220),
-        smash: () => { AudioSys.playTone(100, 'square', 0.2, 0.3); },
-        tada: () => { AudioSys.playTone(523, 'triangle', 0.2); setTimeout(() => AudioSys.playTone(659, 'triangle', 0.4), 150); },
-        coin: () => { AudioSys.playTone(1200, 'sine', 0.1, 0.1); setTimeout(() => AudioSys.playTone(1600, 'sine', 0.2, 0.1), 50); },
-        reroll: () => { for (let i = 0; i < 3; i++) setTimeout(() => AudioSys.playTone(800 + i * 200, 'triangle', 0.1, 0.05), i * 100); }
+        powerup: () => AudioSys.playTone(880, 'sine', 0.4, 0.3, 220),
+        smash: () => { AudioSys.playTone(120, 'square', 0.3, 0.5); },
+        tada: () => { AudioSys.playTone(523, 'triangle', 0.3); setTimeout(() => AudioSys.playTone(659, 'triangle', 0.5), 120); },
+        coin: () => { AudioSys.playTone(1500, 'sine', 0.12, 0.3); setTimeout(() => AudioSys.playTone(2000, 'sine', 0.2, 0.2), 40); },
+        reroll: () => { for (let i = 0; i < 4; i++) setTimeout(() => AudioSys.playTone(700 + i * 250, 'triangle', 0.12, 0.15), i * 80); },
+        tier: (t: number) => {
+            const freq = [523, 659, 783, 1046, 1318, 1567]; // C5 to G6
+            const base = freq[Math.min(t, 5)];
+            for (let i = 0; i < 4; i++) {
+                setTimeout(() => AudioSys.playTone(base * (1 + i * 0.04), 'sine', 0.2, 0.4), i * 50);
+            }
+        },
+        combo: () => AudioSys.playTone(300, 'sawtooth', 0.3, 0.2, 800)
     }
 };
 
@@ -966,6 +1082,11 @@ export function execClear(fr: number[], fc: number[]) {
                 spawnCoinAnimation(lastX, lastY, 2);
             }
 
+            if (cell.type === 'gem') {
+                State.adventure.sessionGems++;
+                spawnPart(lastX, lastY, '#00ffcc', 12, 'spark');
+            }
+
             if (cell.type === 'multiplier' && cell.mult) {
                 State.frenzy.moves = 3;
                 State.frenzy.mult = cell.mult === 'square' ? 2 : 1.5;
@@ -1012,16 +1133,23 @@ export function execClear(fr: number[], fc: number[]) {
     spawnCoinAnimation(lastX, lastY, earnedCoins);
     SaveManager.saveGlobalStats();
 
-    if (lines > 1) {
-        spawnText(`${lines}X COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '#FFF', 80, 'combo');
-        vibrate([20, 50, 20]);
-        State.comboHeat = Math.min(State.comboHeat + 0.2, 1);
+    if (lines >= 1) {
+        // Block Blast Feedback Tiers (More immediate and frequent)
+        const tiers = ['NICE!', 'COOL!', 'GREAT!', 'EXCELLENT!', 'AMAZING!', 'UNBELIEVABLE!'];
+        const tierIdx = Math.min(lines - 1 + (State.streak > 1 ? 1 : 0), tiers.length - 1);
+
+        spawnText(tiers[tierIdx], CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 150, '#FFD700', 80, 'combo');
+        AudioSys.sfx.tier(tierIdx);
+
+        if (lines > 1) {
+            spawnText(`${lines}X COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '#FFF', 60, 'combo');
+            State.comboHeat = Math.min(State.comboHeat + 0.25, 1);
+        }
     }
 
-    // Extra feedback for mega combos
-    if (lines >= 4) {
-        spawnText(`MEGA COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 - 100, '#FFD700', 60, 'combo');
-        vibrate([50, 100, 50, 100]);
+    if (State.streak > 1) {
+        spawnText(`${State.streak} STREAK!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2 + 100, '#00ffcc', 50, 'combo');
+        AudioSys.playTone(800 + State.streak * 50, 'sine', 0.1, 0.1);
     }
     updateLeague();
 }
@@ -1124,6 +1252,7 @@ export function checkAdv() {
     let c = 0;
     if (l.goalType === 'lines') c = State.adventure.sessionLines;
     else if (l.goalType === 'score') c = State.score;
+    else if (l.goalType === 'gems') c = State.adventure.sessionGems;
     else c = State.adventure.sessionBlocks;
     State.adventure.progress = c; updateHUD();
     if (c >= l.target) {
@@ -1327,9 +1456,7 @@ export function initGame(mode: string, lvlIdx: number = 0) {
     State.particles = []; State.floatingTexts = [];
     State.clearingRows = []; State.clearingCols = []; State.activeTool = null; State.previousMove = null;
     State.score = 0; State.level = 1; State.streak = 0; State.bombCounter = 8;
-    State.adventure.levelId = 0; State.adventure.progress = 0;
-
-    State.adventure.levelId = 0; State.adventure.progress = 0;
+    State.adventure = { levelId: lvlIdx, progress: 0, sessionBlocks: 0, sessionLines: 0, sessionGems: 0 };
 
     document.body.classList.add('in-game');
 
@@ -1408,6 +1535,22 @@ export function initGame(mode: string, lvlIdx: number = 0) {
     State.linesClearedTotal = 0;
     State.streak = 0;
     State.grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+
+    // Load level board if available
+    if (mode === 'adventure' && ADVENTURE_LEVELS[lvlIdx] && ADVENTURE_LEVELS[lvlIdx].board) {
+        const board = ADVENTURE_LEVELS[lvlIdx].board!;
+        for (let y = 0; y < ROWS; y++) {
+            for (let x = 0; x < COLS; x++) {
+                if (board[y][x]) {
+                    if (board[y][x] === 'G') {
+                        State.grid[y][x] = { color: '#00ffcc', scale: 0, targetScale: 1, type: 'gem' };
+                    } else {
+                        State.grid[y][x] = { color: '#8d6e63', scale: 0, targetScale: 1 };
+                    }
+                }
+            }
+        }
+    }
     State.queue = [];
     State.boss.active = false;
     State.comboHeat = 0;
@@ -1440,7 +1583,7 @@ export function initGame(mode: string, lvlIdx: number = 0) {
         if (State.gameMode === 'bomb') showToast("Defuse bombs!", true);
         if (State.gameMode === 'adventure') {
             showToast(ADVENTURE_LEVELS[State.adventure.levelId].title, true);
-            if (State.adventure.levelId === 9) spawnBoss("TOY MASTER", 100);
+            if (State.adventure.levelId === 14) spawnBoss("TOY MASTER", 150);
         }
     }
     updateHUD();

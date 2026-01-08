@@ -229,7 +229,32 @@ function applyThemeStyles(ctx: CanvasRenderingContext2D, c: any, dx: number, dy:
 }
 
 function drawSpecialBlockOverlays(ctx: CanvasRenderingContext2D, c: any, dx: number, dy: number, sz: number) {
-    if (c.type === 'gold') {
+    if (c.type === 'gem') {
+        // Sparkly Diamond Effect for Adventure Gems
+        ctx.save();
+        const pulse = 0.8 + Math.sin(Date.now() / 200) * 0.2;
+        ctx.shadowColor = '#00ffcc';
+        ctx.shadowBlur = 10 * pulse;
+
+        ctx.fillStyle = '#fff';
+        ctx.beginPath();
+        const mx = dx + sz / 2, my = dy + sz / 2;
+        ctx.moveTo(mx, dy + sz * 0.2); // Top
+        ctx.lineTo(dx + sz * 0.8, my); // Right
+        ctx.lineTo(mx, dy + sz * 0.8); // Bottom
+        ctx.lineTo(dx + sz * 0.2, my); // Left
+        ctx.closePath();
+        ctx.fill();
+
+        // Shine line
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(dx + sz * 0.3, dy + sz * 0.3);
+        ctx.lineTo(dx + sz * 0.4, dy + sz * 0.4);
+        ctx.stroke();
+        ctx.restore();
+    } else if (c.type === 'gold') {
         ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 4; ctx.strokeRect(dx, dy, sz, sz);
         ctx.fillStyle = '#ffd700'; ctx.font = '20px Arial'; ctx.textAlign = 'center'; ctx.fillText('🟡', dx + sz / 2, dy + sz * 0.7);
     } else if (c.type === 'metal') {
@@ -433,19 +458,43 @@ function updateAndDrawTexts(ctx: CanvasRenderingContext2D, speedFactor: number) 
     for (let i = State.floatingTexts.length - 1; i >= 0; i--) {
         let f = State.floatingTexts[i];
         if (f.type === 'combo') {
-            f.l -= 0.01 * speedFactor;
+            f.l -= 0.006 * speedFactor;
             f.tick += 0.1 * speedFactor;
-            const scale = f.s * (1 + Math.sin(f.tick * 0.5) * 0.2);
-            ctx.globalAlpha = f.l; ctx.fillStyle = f.c; ctx.font = "900 " + scale + "px sans-serif";
-            ctx.textAlign = "center"; ctx.fillText(f.t, f.x, f.y);
+
+            // "Pop" animation using overshoot
+            const p = Math.min(1, f.tick * 0.5);
+            const bounce = p < 0.5 ? p * 2.4 : 1.2 - (p - 0.5) * 0.4;
+            const scale = f.s * bounce;
+
+            ctx.save();
+            ctx.globalAlpha = Math.min(1, f.l * 2);
+            ctx.shadowColor = f.c;
+            ctx.shadowBlur = 30;
+            ctx.fillStyle = '#fff';
+            ctx.font = "900 " + scale + "px 'League Spartan', sans-serif";
+            ctx.textAlign = "center";
+            ctx.lineWidth = 6;
+            ctx.strokeStyle = '#000';
+            ctx.strokeText(f.t, f.x, f.y);
+            ctx.strokeStyle = f.c;
+            ctx.lineWidth = 3;
+            ctx.strokeText(f.t, f.x, f.y);
+            ctx.fillText(f.t, f.x, f.y);
+            ctx.restore();
         } else {
             f.y -= 2 * speedFactor; f.l -= 0.02 * speedFactor;
-            ctx.globalAlpha = f.l; ctx.fillStyle = f.c; ctx.font = "900 " + f.s + "px sans-serif";
-            ctx.textAlign = "center"; ctx.fillText(f.t, f.x, f.y);
+            ctx.save();
+            ctx.globalAlpha = f.l;
+            ctx.fillStyle = f.c;
+            ctx.font = "900 " + f.s + "px 'League Spartan', sans-serif";
+            ctx.textAlign = "center";
+            ctx.shadowColor = 'rgba(0,0,0,0.5)';
+            ctx.shadowBlur = 4;
+            ctx.fillText(f.t, f.x, f.y);
+            ctx.restore();
         }
         if (f.l <= 0) State.floatingTexts.splice(i, 1);
     }
-    ctx.globalAlpha = 1;
 }
 
 function updateCoinDisplaysGlobal() {
