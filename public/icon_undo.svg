@@ -1,0 +1,20 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="undo_grad" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#FFCA28"/>
+<stop offset="1" stop-color="#FF6F00"/>
+</linearGradient>
+<filter id="dropShadow">
+<feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.3"/>
+</filter>
+</defs>
+
+<g filter="url(#dropShadow)">
+<!-- Background Shape -->
+<rect x="28" y="28" width="200" height="200" rx="40" fill="url(#undo_grad)" stroke="#FFE082" stroke-width="4"/>
+
+<!-- Back Arrow -->
+<path d="M178 170 H 128 Q 78 170 78 120 Q 78 70 128 70 H 148" stroke="white" stroke-width="24" stroke-linecap="round" fill="none"/>
+<path d="M178 170 L 148 140 M 178 170 L 148 200" stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</g>
+</svg>

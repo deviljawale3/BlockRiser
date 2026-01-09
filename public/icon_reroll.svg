@@ -1,0 +1,22 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="reroll_grad" x1="0" y1="0" x2="256" y2="256" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#29B6F6"/>
+<stop offset="1" stop-color="#0277BD"/>
+</linearGradient>
+<filter id="dropShadow">
+<feDropShadow dx="0" dy="4" stdDeviation="6" flood-opacity="0.3"/>
+</filter>
+</defs>
+
+<g filter="url(#dropShadow)">
+<!-- Background Shape -->
+<rect x="28" y="28" width="200" height="200" rx="40" fill="url(#reroll_grad)" stroke="#81D4FA" stroke-width="4"/>
+<!-- Inner Shadow -->
+<rect x="28" y="28" width="200" height="200" rx="40" fill="url(#reroll_grad)" opacity="0.5"/>
+
+<!-- Arrow Circles -->
+<path d="M128 70 A 58 58 0 0 1 170 160 L 155 145 M 170 160 L 185 145" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+<path d="M128 186 A 58 58 0 0 1 86 96 L 101 111 M 86 96 L 71 111" stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</g>
+</svg>

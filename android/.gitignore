@@ -1,0 +1,102 @@
+# Using Android gitignore template
+# https://github.com/github/gitignore/blob/HEAD/Android.gitignore
+
+# =========================
+# Build outputs
+# =========================
+*.apk
+*.aar
+*.ap_
+*.aab
+*.dex
+*.class
+
+# =========================
+# Generated directories
+# =========================
+bin/
+gen/
+out/
+build/
+.gradle/
+
+# =========================
+# Local / machine-specific
+# =========================
+local.properties
+.keystore
+keystore.properties
+
+# =========================
+# 🔐 SIGNING FILES (CRITICAL)
+# =========================
+*.jks
+*.keystore
+
+# =========================
+# Proguard
+# =========================
+proguard/
+
+# =========================
+# Logs
+# =========================
+*.log
+
+# =========================
+# Android Studio / IntelliJ
+# =========================
+*.iml
+.idea/
+!.idea/codeStyles
+!.idea/runConfigurations
+
+.navigation/
+captures/
+
+# =========================
+# Native build
+# =========================
+.externalNativeBuild/
+.cxx/
+
+# =========================
+# Google Services
+# =========================
+# google-services.json
+
+# =========================
+# Fastlane
+# =========================
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
+fastlane/readme.md
+
+# =========================
+# Lint
+# =========================
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+lint/reports/
+
+# =========================
+# Android profiling
+# =========================
+*.hprof
+
+# =========================
+# Capacitor / Cordova
+# =========================
+capacitor-cordova-android-plugins
+
+# Copied web assets (auto-generated)
+app/src/main/assets/public
+app/src/main/assets/capacitor.config.json
+app/src/main/assets/capacitor.plugins.json
+
+# Legacy Cordova config
+app/src/main/res/xml/config.xml

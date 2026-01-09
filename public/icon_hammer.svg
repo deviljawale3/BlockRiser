@@ -1,0 +1,23 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<linearGradient id="hammer_head_shine" x1="50" y1="50" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#E0E0E0"/>
+<stop offset="1" stop-color="#9E9E9E"/>
+</linearGradient>
+<linearGradient id="hammer_handle" x1="100" y1="200" x2="150" y2="50" gradientUnits="userSpaceOnUse">
+<stop offset="0" stop-color="#8D6E63"/>
+<stop offset="1" stop-color="#D7CCC8"/>
+</linearGradient>
+<filter id="dropShadow">
+<feDropShadow dx="2" dy="4" stdDeviation="4" flood-opacity="0.4"/>
+</filter>
+</defs>
+<g filter="url(#dropShadow)" transform="rotate(-45 128 128)">
+<!-- Handle -->
+<rect x="110" y="80" width="36" height="140" rx="8" fill="url(#hammer_handle)" stroke="#5D4037" stroke-width="4"/>
+<!-- Head -->
+<rect x="68" y="40" width="120" height="70" rx="10" fill="url(#hammer_head_shine)" stroke="#424242" stroke-width="4"/>
+<!-- Shine Highlight -->
+<path d="M80 50 H120 V60 H80 Z" fill="#FFFFFF" opacity="0.4"/>
+</g>
+</svg>

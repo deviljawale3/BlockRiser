@@ -1,6 +1,8 @@
 // BlockRiser Game Engine
 // Fully Modularized TypeScript Implementation
 
+import { gameLoop } from './render';
+
 // --- TYPES ---
 export interface Theme {
     id: string;
@@ -32,6 +34,11 @@ export interface GameEvent {
     duration: number; // in turns/moves
 }
 
+export interface Shape {
+    id: string;
+    map: number[][];
+}
+
 export interface HQLevel {
     id: string;
     name: string;
@@ -49,10 +56,12 @@ export interface Policy {
 export interface AdventureLevel {
     id: number;
     title: string;
-    goalType: 'lines' | 'score' | 'blocks' | 'gems';
+    goalType: 'lines' | 'score' | 'blocks' | 'gems' | 'boss';
     target: number;
+    moves: number;
     desc: string;
     board?: (number | string | null)[][];
+    bossDefeatedThisSession?: boolean;
 }
 
 export interface Acquisition {
@@ -76,9 +85,6 @@ export interface Inventory {
     bomb: number;
     reroll: number;
     undo: number;
-    merger: number;
-    takeover: number;
-    taxHaven: number;
 }
 
 // --- CONSTANTS & CONFIG ---
@@ -86,11 +92,11 @@ export const COLS = 8;
 export const ROWS = 8;
 export const CANVAS_WIDTH = 800;
 export const CANVAS_HEIGHT = 1200;
-export const GRID_OFFSET_X = 40;
-export const GRID_OFFSET_Y = 50;
+export const GRID_OFFSET_X = 60; // Narrower board to save vertical space
+export const GRID_OFFSET_Y = 160;
 export const CELL_SIZE = (CANVAS_WIDTH - (GRID_OFFSET_X * 2)) / COLS;
-export const QUEUE_Y = CANVAS_HEIGHT - 320; // Lowered to fill empty space
-export const QUEUE_HEIGHT = 180; // Slightly taller area
+export const QUEUE_Y = GRID_OFFSET_Y + (ROWS * CELL_SIZE) + 30; // Closer to grid
+export const QUEUE_HEIGHT = 160;
 
 export const STORAGE_KEY = 'blockriser-highscore';
 export const STATE_KEY = 'blockriser-state';
@@ -170,103 +176,104 @@ export const SHAPES: Shape[] = [
 
 export const ADVENTURE_LEVELS: AdventureLevel[] = [
     {
-        id: 0, title: "Garden Gate", goalType: 'lines', target: 5, desc: "Clear 5 Lines", board: [
-            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 1, 1, 1]
+        id: 0, title: "Sunny Start", goalType: 'gems', target: 5, moves: 30, desc: "Collect 5 Gems", board: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 'G', 0, 0, 'G', 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 'G', 0, 0, 'G', 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 'G', 0, 0, 0, 0]
         ]
     },
     {
-        id: 1, title: "Sweet Heart", goalType: 'gems', target: 8, desc: "Collect 8 Gems", board: [
-            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 'G', 0, 0, 'G', 0, 0], [0, 1, 1, 1, 1, 1, 1, 0], [1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1], [0, 1, 1, 1, 1, 1, 1, 0], [0, 0, 1, 1, 1, 1, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0]
+        id: 1, title: "Color Bloom", goalType: 'lines', target: 5, moves: 25, desc: "Clear 5 Lines", board: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]
         ]
     },
     {
-        id: 2, title: "Sunny Smile", goalType: 'score', target: 1500, desc: "Score 1500 Pts", board: [
-            [0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 0, 0, 1, 1, 0], [0, 1, 1, 0, 0, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 0, 0, 0, 0, 1, 1], [0, 1, 1, 1, 1, 1, 1, 0], [0, 0, 1, 1, 1, 1, 0, 0]
+        id: 2, title: "Blocky Suburbs", goalType: 'score', target: 2500, moves: 25, desc: "Score 2,500 Pts", board: [
+            [1, 0, 0, 1, 1, 0, 0, 1], [0, 0, 0, 0, 0, 0, 0, 0], [0, 1, 1, 0, 0, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 1, 1, 0, 0, 0], [0, 1, 1, 0, 0, 1, 1, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0, 1]
         ]
     },
     {
-        id: 3, title: "Grid Lock", goalType: 'lines', target: 10, desc: "Clear 10 Lines", board: [
-            [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1],
-            [0, 0, 0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0, 0, 0], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1]
+        id: 3, title: "Puzzle Peaks", goalType: 'blocks', target: 40, moves: 20, desc: "Place 40 Blocks", board: [
+            [1, 1, 1, 0, 0, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 1, 1, 1, 0, 1], [0, 0, 1, 1, 1, 1, 0, 0],
+            [0, 0, 1, 1, 1, 1, 0, 0], [1, 0, 1, 1, 1, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 0, 0, 1, 1, 1]
         ]
     },
     {
-        id: 4, title: "The Pillar", goalType: 'blocks', target: 40, desc: "Place 40 Blocks", board: [
-            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1],
-            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 1, 1, 0, 1, 1], [1, 1, 0, 1, 1, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1]
+        id: 4, title: "Treasure Hunt", goalType: 'gems', target: 15, moves: 30, desc: "Collect 15 Gems", board: [
+            ['G', 1, 0, 0, 0, 0, 1, 'G'], [1, 1, 0, 0, 0, 0, 1, 1], [0, 0, 'G', 1, 1, 'G', 0, 0], [0, 0, 1, 'G', 'G', 1, 0, 0],
+            [0, 0, 1, 'G', 'G', 1, 0, 0], [0, 0, 'G', 1, 1, 'G', 0, 0], [1, 1, 0, 0, 0, 0, 1, 1], ['G', 1, 0, 0, 0, 0, 1, 'G']
         ]
     },
     {
-        id: 5, title: "Gem Valley", goalType: 'gems', target: 25, desc: "Collect 25 Gems", board: [
-            ['G', 0, 0, 0, 0, 0, 0, 'G'], [0, 'G', 0, 1, 1, 0, 'G', 0], [0, 0, 'G', 1, 1, 'G', 0, 0], [1, 1, 1, 'G', 'G', 1, 1, 1],
-            [1, 1, 1, 'G', 'G', 1, 1, 1], [0, 0, 'G', 1, 1, 'G', 0, 0], [0, 'G', 0, 1, 1, 0, 'G', 0], ['G', 0, 0, 0, 0, 0, 0, 'G']
+        id: 5, title: "Metal Works", goalType: 'blocks', target: 50, moves: 25, desc: "Place 50 Blocks", board: [
+            [1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 0, 0, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1],
+            [1, 0, 0, 1, 1, 0, 0, 1], [1, 0, 0, 1, 1, 0, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1]
         ]
     },
     {
-        id: 6, title: "Mega Wall", goalType: 'score', target: 3000, desc: "Score 3000 Pts", board: [
-            [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]
+        id: 6, title: "Robot Factory", goalType: 'lines', target: 8, moves: 25, desc: "Clear 8 Lines", board: [
+            [0, 1, 0, 1, 0, 1, 0, 1], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 0, 0, 0, 1, 0], [1, 0, 0, 1, 1, 0, 0, 1],
+            [1, 0, 0, 1, 1, 0, 0, 1], [0, 1, 0, 0, 0, 0, 1, 0], [1, 0, 1, 0, 1, 0, 1, 0], [0, 1, 0, 1, 0, 1, 0, 1]
         ]
     },
     {
-        id: 7, title: "Crossroads", goalType: 'lines', target: 15, desc: "Clear 15 Lines", board: [
-            [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1],
-            [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0]
+        id: 7, title: "Jungle Gym", goalType: 'gems', target: 20, moves: 30, desc: "Collect 20 Gems", board: [
+            [0, 1, 0, 'G', 'G', 0, 1, 0], [1, 1, 1, 0, 0, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0], ['G', 0, 'G', 0, 0, 'G', 0, 'G'],
+            ['G', 0, 'G', 0, 0, 'G', 0, 'G'], [0, 0, 0, 0, 0, 0, 0, 0], [1, 1, 1, 0, 0, 1, 1, 1], [0, 1, 0, 'G', 'G', 0, 1, 0]
         ]
     },
     {
-        id: 8, title: "Emerald Reef", goalType: 'gems', target: 40, desc: "Collect 40 Gems", board: [
-            ['G', 'G', 0, 0, 0, 0, 'G', 'G'], ['G', 1, 'G', 0, 0, 'G', 1, 'G'], [0, 'G', 1, 'G', 'G', 1, 'G', 0], [0, 0, 'G', 1, 1, 'G', 0, 0],
-            [0, 0, 'G', 1, 1, 'G', 0, 0], [0, 'G', 1, 'G', 'G', 1, 'G', 0], ['G', 1, 'G', 0, 0, 'G', 1, 'G'], ['G', 'G', 0, 0, 0, 0, 'G', 'G']
+        id: 8, title: "High Score Hero", goalType: 'score', target: 10000, moves: 35, desc: "Score 10,000 Pts", board: [
+            [1, 0, 0, 1, 1, 0, 0, 1], [0, 0, 0, 1, 1, 0, 0, 0], [0, 0, 1, 1, 1, 1, 0, 0], [1, 1, 1, 1, 1, 1, 1, 1],
+            [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 1, 1, 1, 1, 0, 0], [0, 0, 0, 1, 1, 0, 0, 0], [1, 0, 0, 1, 1, 0, 0, 1]
         ]
     },
     {
-        id: 9, title: "The Spiral", goalType: 'score', target: 5000, desc: "Score 5000 Pts", board: [
-            [1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 1, 1, 1, 1, 0, 1], [1, 0, 1, 0, 0, 1, 0, 1],
-            [1, 0, 1, 1, 1, 1, 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]
+        id: 9, title: "Toy Master's Lair", goalType: 'boss', target: 1, moves: 40, desc: "Defeat Toy Master", board: [
+            [1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 'G', 1, 1, 'G', 0, 1],
+            [1, 0, 'G', 1, 1, 'G', 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1]
         ]
     },
     {
-        id: 10, title: "Dual Pillars", goalType: 'lines', target: 30, desc: "Clear 30 Lines", board: [
-            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1],
-            [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1]
+        id: 10, title: "MECHANIC: ICE 🧊", goalType: 'lines', target: 8, moves: 30, desc: "Ice needs 2 hits!", board: [
+            [0, 0, 0, 0, 0, 0, 0, 0], [0, 'I', 'I', 0, 0, 'I', 'I', 0], [0, 'I', 'I', 0, 0, 'I', 'I', 0], [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 'I', 'I', 0, 0, 0], [0, 0, 0, 'I', 'I', 0, 0, 0], [0, 'I', 'I', 0, 0, 'I', 'I', 0], [0, 0, 0, 0, 0, 0, 0, 0]
         ]
     },
     {
-        id: 11, title: "Gem Maze", goalType: 'gems', target: 55, desc: "Collect 55 Gems", board: [
-            ['G', 'G', 'G', 0, 0, 'G', 'G', 'G'], ['G', 0, 0, 0, 0, 0, 0, 'G'], ['G', 0, 'G', 'G', 'G', 'G', 0, 'G'], ['G', 0, 'G', 0, 0, 'G', 0, 'G'],
-            [1, 0, 'G', 0, 0, 'G', 0, 1], ['G', 0, 'G', 'G', 'G', 'G', 0, 'G'], ['G', 0, 0, 0, 0, 0, 0, 'G'], ['G', 'G', 'G', 0, 0, 'G', 'G', 'G']
+        id: 11, title: "MECHANIC: CHAINS ⛓️", goalType: 'gems', target: 5, moves: 25, desc: "Linked: Break one, break all!", board: [
+            ['G', 0, 0, 'C', 'C', 0, 0, 'G'], [0, 0, 0, 0, 0, 0, 0, 0], [0, 'C', 0, 0, 0, 0, 'C', 0], [0, 0, 0, 'G', 'G', 0, 0, 0],
+            [0, 0, 0, 'G', 'G', 0, 0, 0], [0, 'C', 0, 0, 0, 0, 'C', 0], [0, 0, 0, 0, 0, 0, 0, 0], ['G', 0, 0, 'C', 'C', 0, 0, 'G']
         ]
     },
     {
-        id: 12, title: "Imperial Wall", goalType: 'blocks', target: 150, desc: "Place 150 Blocks", board: [
-            [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1], [0, 0, 0, 0, 0, 0, 0, 0]
+        id: 12, title: "ULTIMATE TEST 🏆", goalType: 'score', target: 5000, moves: 35, desc: "Ice & Chains together!", board: [
+            ['I', 'C', 'I', 'C', 'I', 'C', 'I', 'C'], [0, 0, 0, 0, 0, 0, 0, 0], ['C', 'I', 'C', 'I', 'C', 'I', 'C', 'I'], [0, 0, 0, 0, 0, 0, 0, 0],
+            ['I', 0, 0, 0, 0, 0, 0, 'I'], [0, 0, 0, 0, 0, 0, 0, 0], ['C', 0, 0, 0, 0, 0, 0, 'C'], [0, 0, 0, 0, 0, 0, 0, 0]
         ]
     },
     {
-        id: 13, title: "Diamond Vault", goalType: 'gems', target: 70, desc: "Collect 70 Gems", board: [
+        id: 13, title: "Diamond Vault", goalType: 'gems', target: 70, moves: 40, desc: "Collect 70 Gems", board: [
             [1, 1, 1, 'G', 'G', 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], ['G', 0, 'G', 1, 1, 'G', 0, 'G'],
             ['G', 0, 'G', 1, 1, 'G', 0, 'G'], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 'G', 'G', 1, 1, 1]
         ]
     },
     {
-        id: 14, title: "Toy Master", goalType: 'lines', target: 1, desc: "Final Showdown!", board: [
+        id: 14, title: "Toy Master", goalType: 'boss', target: 1, moves: 50, desc: "Final Showdown!", board: [
             [1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 'G', 1, 1, 'G', 0, 1],
             [1, 0, 'G', 1, 1, 'G', 0, 1], [1, 0, 'G', 'G', 'G', 'G', 0, 1], [1, 0, 0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 1, 1, 1]
         ]
     }
 ];
 
+
 export const ACQUISITIONS: Acquisition[] = [
-    { id: 'lemonade', name: 'Zest & Co', desc: 'Local Lemonade Empire. +1% Income.', requirement: 10000, icon: '🍋' },
-    { id: 'gym', name: 'Iron Core Fitness', desc: 'City-wide Gym Chain. +2% Score.', requirement: 50000, icon: '💪' },
-    { id: 'startup', name: 'ByteBound AI', desc: 'Predictive Algorithm Lab. +1 Move/Game.', requirement: 150000, icon: '🤖' },
-    { id: 'mall', name: 'Capital Plaza', desc: 'Continental Shopping Hub. +5% Income.', requirement: 500000, icon: '🛍️' },
-    { id: 'aerospace', name: 'Stellaris Corp', desc: 'Interorbital Freight. +10% Multiplier.', requirement: 1000000, icon: '🚀' }
+    { id: 'vintage', name: 'Vintage Robot', desc: 'Classic 90s Toy. +1% Income.', requirement: 10000, icon: '🤖' },
+    { id: 'train', name: 'Model Train', desc: 'Electric Set. +2% Score.', requirement: 50000, icon: '🚂' },
+    { id: 'console', name: 'Retro Console', desc: 'High Score Glitch. +1 Move/Game.', requirement: 150000, icon: '🕹️' },
+    { id: 'castle', name: 'Dream Castle', desc: 'Magical Playset. +5% Income.', requirement: 500000, icon: '🏰' },
+    { id: 'rocket', name: 'Moon Rocket', desc: 'To Infinity! +10% Multiplier.', requirement: 1000000, icon: '🚀' }
 ];
 
 export const ACHIEVEMENTS: Achievement[] = [
@@ -278,9 +285,11 @@ export const ACHIEVEMENTS: Achievement[] = [
 ];
 
 export const UPGRADES: Upgrade[] = [
-    { id: 'magnet', name: 'Magnet', desc: 'Spawn Gold blocks (extra coins)', maxLevel: 5, costs: [500, 1000, 2000, 4000, 8000] },
-    { id: 'insurance', name: 'Insurance', desc: 'Chance to keep Undo charge', maxLevel: 5, costs: [1000, 2000, 4000, 8000, 15000] },
-    { id: 'eye', name: 'Architect Eye', desc: 'Visual placement helper', maxLevel: 3, costs: [2000, 5000, 10000] }
+    { id: 'magnet', name: 'Magnet', desc: 'Increases Gold block spawn rate', maxLevel: 5, costs: [500, 1000, 2000, 4000, 8000] },
+    { id: 'insurance', name: 'Insurance', desc: 'Chance to save your Undo charge', maxLevel: 5, costs: [1000, 2000, 4000, 8000, 15000] },
+    { id: 'eye', name: 'Architect Eye', desc: 'Advanced visual placement helper', maxLevel: 3, costs: [2000, 5000, 10000] },
+    { id: 'combo', name: 'Combo King', desc: '+10% Combo score per level', maxLevel: 5, costs: [3000, 6000, 12000, 25000, 50000] },
+    { id: 'frenzy', name: 'Frenzy Master', desc: '+1 Move of Frenzy per level', maxLevel: 5, costs: [4000, 8000, 16000, 32000, 64000] }
 ];
 
 export const CITIES: City[] = [
@@ -290,34 +299,36 @@ export const CITIES: City[] = [
 ];
 
 export const HQ_UPGRADES: HQLevel[] = [
-    { id: 'desk', name: 'Leased Desk', incomeRate: 10, cost: 500 },
-    { id: 'office', name: 'Small Office', incomeRate: 50, cost: 2000 },
-    { id: 'tower', name: 'corporate Tower', incomeRate: 200, cost: 10000 },
-    { id: 'global', name: 'Global HQ', incomeRate: 1000, cost: 50000 }
+    { id: 'box', name: 'Cardboard Box', incomeRate: 10, cost: 500 },
+    { id: 'chest', name: 'Wooden Chest', incomeRate: 50, cost: 2000 },
+    { id: 'room', name: 'Play Room', incomeRate: 200, cost: 10000 },
+    { id: 'vault', name: 'Toy Paradise', incomeRate: 1000, cost: 50000 }
 ];
 
 export const POLICIES: Policy[] = [
-    { id: 'aggressive', name: 'Aggressive Expansion', desc: 'Pieces 20% larger | 2x Score', icon: '📈' },
-    { id: 'taxShield', name: 'Tax Shield', desc: '3 Board Clears instead of Game Over', icon: '🛡️' },
-    { id: 'leanStartup', name: 'Lean Startup', desc: '1 Queue Slot | 3x HQ Passive Income', icon: '💡' }
+    { id: 'aggressive', name: 'Mega Blocks', desc: 'Pieces 20% larger | 2x Score', icon: '🧱' },
+    { id: 'taxShield', name: 'Safety Net', desc: '3 Extra Lives (Board Clears)', icon: '🕸️' },
+    { id: 'leanStartup', name: 'Quick Sort', desc: '1 Queue Slot | 3x Passive Income', icon: '<svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" fill="#ffeb3b" stroke="#f57f17" stroke-width="2" stroke-linejoin="round"/></svg>' }
 ];
 
 export const EVENTS: GameEvent[] = [
-    { id: 'goldRush', name: 'GOLD RUSH!', desc: '50% Gold Blocks!', duration: 15 },
-    { id: 'sabotage', name: 'SABOTAGE!', desc: 'Rival blocks spawning!', duration: 1 },
-    { id: 'bullMarket', name: 'BULL MARKET!', desc: '2x Multiplier | High Speed!', duration: 20 },
-    { id: 'crash', name: 'MARKET CRASH!', desc: 'Queue Reset!', duration: 1 }
+    { id: 'goldRush', name: 'SUGAR RUSH!', desc: '50% Gold Blocks!', duration: 15 },
+    { id: 'sabotage', name: 'MESSY ROOM!', desc: 'Rival blocks spawning!', duration: 1 },
+    { id: 'bullMarket', name: 'PLAY TIME!', desc: '2x Multiplier | High Speed!', duration: 20 },
+    { id: 'crash', name: 'CLEAN UP!', desc: 'Queue Reset!', duration: 1 }
 ];
 
 export const DAILY_REWARDS = [
-    { day: 1, type: 'coin', val: 50, icon: '🟡' },
+    { day: 1, type: 'coin', val: 100, icon: '🟡' },
     { day: 2, type: 'hammer', val: 1, icon: '🔨' },
-    { day: 3, type: 'coin', val: 100, icon: '🟡' },
+    { day: 3, type: 'coin', val: 300, icon: '🟡' },
     { day: 4, type: 'reroll', val: 2, icon: '🔄' },
-    { day: 5, type: 'undo', val: 2, icon: '↩️' },
+    { day: 5, type: 'coin', val: 1000, icon: '💰' },
     { day: 6, type: 'bomb', val: 1, icon: '💣' },
-    { day: 7, type: 'coin', val: 500, icon: '👑' }
+    { day: 7, type: 'coin', val: 2000, icon: '💎' }
 ];
+
+
 
 // --- CLASSES ---
 
@@ -374,13 +385,11 @@ export class Piece {
             this.type = 'crypto';
         }
 
-        // Piece enlargement disabled to match standard game mechanics
-        /*
+        // Mega Blocks Cosmetic Logic (Senior Stability Fix)
         if (State.activePolicy === 'aggressive' && Math.random() > 0.5) {
-            this.map.push(Array(this.cols).fill(1));
-            this.rows++;
+            // Cosmetic only: slightly brighter color or special flag
+            this.color = '#FF8A65'; // Vibrant orange for Mega Pieces
         }
-        */
     }
 
     rotate() {
@@ -406,29 +415,24 @@ export const GlobalStats = {
     dailyStreak: 0,
     lastLogin: null as string | null,
     inventory: { hammer: 99, bomb: 99, reroll: 99, undo: 99, merger: 99, takeover: 99, taxHaven: 99 } as Inventory,
-    upgrades: { magnet: 5, insurance: 5, eye: 3 },
+    upgrades: { magnet: 1, insurance: 1, eye: 1, combo: 0, frenzy: 0 },
     hqLevel: 4,
     currentCity: 'suburbs',
     unlockedCities: ['suburbs', 'neon', 'obsidian'],
     lastPassiveCollection: Date.now(),
     leagueRank: 4,
-    stocks: { brsr: 10, gold: 5, cube: 0, tyn: 0 },
-    bossDefeated: 0
+    bossDefeated: 0,
+    // NEW ANALYTICS
+    totalGoldEarned: 0,
+    maxCombo: 0,
+    maxStreak: 0,
+    timePlayed: 0, // in seconds
+    allTimeHighScore: 0
 };
 
 export const LEAGUES = ['BRONZE', 'SILVER', 'GOLD', 'PLATINUM', 'DIAMOND'];
 
-export function updateStocks() {
-    const ticker = document.querySelector('.ticker');
-    if (!ticker) return;
-    const items = ['$BRSR', '$GOLD', '$CUBE', '$TYN'];
-    ticker.innerHTML = items.map(item => {
-        const change = (Math.random() * 20 - 10).toFixed(1);
-        const up = parseFloat(change) >= 0;
-        return `<span>${item} <b class="${up ? 'up' : 'down'}">${up ? '+' : ''}${change}%</b></span>`;
-    }).join(' ');
-}
-setInterval(updateStocks, 30000); // Update every 30s
+
 
 export const State = {
     grid: [] as (any | null)[][],
@@ -455,8 +459,9 @@ export const State = {
     gameMode: 'classic',
     bombCounter: 0,
     currentTheme: 'classic',
+    activeCity: 'suburbs',
     activeTool: null as string | null,
-    adventure: { levelId: 0, progress: 0, sessionBlocks: 0, sessionLines: 0, sessionGems: 0 },
+    adventure: { levelId: 0, progress: 0, sessionBlocks: 0, sessionLines: 0, sessionGems: 0, movesLeft: 0, maxMoves: 0, bossDefeatedThisSession: false },
     tutorial: { active: false, step: 0 },
     settings: { highQuality: true, vibration: true, gameSpeed: 0, music: true, sfx: true },
     screenShake: 0,
@@ -465,7 +470,6 @@ export const State = {
     gameRunning: false,
     investor: { active: false, type: 'lines', target: 0, progress: 0, movesLeft: 0, reward: 0 },
     frenzy: { moves: 0, mult: 1 },
-    taxHavenMoves: 0,
     moveCount: 0,
     boss: { active: false, name: '', health: 100, maxHealth: 100, movesLeft: 20 },
     comboHeat: 0,
@@ -473,7 +477,10 @@ export const State = {
     bailoutsLeft: 0,
     activeEvent: null as GameEvent | null,
     eventTimer: 0,
-    phantomPos: null as { x: number, y: number, gx: number, gy: number } | null
+    taxHavenMoves: 0,
+    phantomPos: null as { x: number, y: number, gx: number, gy: number } | null,
+    blockSkin: 'default' as 'default' | 'crystal' | 'neon' | 'wood',
+    effects: [] as any[]
 };
 
 // --- AUDIO SYSTEM ---
@@ -541,14 +548,47 @@ export const AudioSys = {
             this.musicInterval = null;
         }
     },
+    // Human Voice Feedback System
+    speak: (text: string, pitch: number = 1.0, rate: number = 1.0) => {
+        try {
+            if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.pitch = pitch;
+            utterance.rate = rate;
+            utterance.volume = 0.6;
+            window.speechSynthesis.speak(utterance);
+        } catch (e) {
+            console.log('Voice feedback unavailable');
+        }
+    },
     sfx: {
         pickup: () => AudioSys.playTone(400, 'sine', 0.15, 0.1),
         rotate: () => AudioSys.playTone(800, 'triangle', 0.1, 0.05, 1200),
-        place: (col: number = 0) => { const n = [261, 293, 329, 392, 440, 523, 587, 659]; AudioSys.playTone(n[col % 8], 'sine', 0.15, 0.2); },
+        place: (col: number = 0) => {
+            const n = [261, 293, 329, 392, 440, 523, 587, 659];
+            AudioSys.playTone(n[col % 8], 'sine', 0.15, 0.2);
+            // Add subtle click sound
+            AudioSys.playTone(1200, 'square', 0.05, 0.05);
+        },
         invalid: () => AudioSys.playTone(150, 'sawtooth', 0.2, 0.1, 100),
         clear: (c: number) => {
+            // Enhanced cascading clear sound
             for (let i = 0; i < Math.min(c, 6); i++) {
-                setTimeout(() => AudioSys.playTone(700 * (1 + i * 0.1), 'sine', 0.12, 0.4), i * 40);
+                setTimeout(() => {
+                    AudioSys.playTone(700 * (1 + i * 0.1), 'sine', 0.15, 0.4);
+                    AudioSys.playTone(350 * (1 + i * 0.1), 'triangle', 0.1, 0.3);
+                }, i * 40);
+            }
+
+            // Human voice feedback based on lines cleared
+            if (c >= 4) {
+                setTimeout(() => AudioSys.speak('Excellent!', 1.2, 1.1), 200);
+            } else if (c === 3) {
+                setTimeout(() => AudioSys.speak('Amazing!', 1.1, 1.0), 200);
+            } else if (c === 2) {
+                setTimeout(() => AudioSys.speak('Cool!', 1.0, 1.0), 200);
+            } else if (c === 1) {
+                setTimeout(() => AudioSys.speak('Nice!', 0.9, 1.0), 200);
             }
         },
         levelup: () => {
@@ -557,6 +597,7 @@ export const AudioSys = {
                 AudioSys.playTone(n, 'triangle', 0.4, 0.3);
                 AudioSys.playTone(n / 2, 'sine', 0.5, 0.2);
             }, i * 70));
+            setTimeout(() => AudioSys.speak('Level Up!', 1.3, 1.0), 300);
         },
         gameover: () => {
             if (!AudioSys.ctx) return;
@@ -571,18 +612,47 @@ export const AudioSys = {
             o.start(); o.stop(t + 1.3);
         },
         powerup: () => AudioSys.playTone(880, 'sine', 0.4, 0.3, 220),
-        smash: () => { AudioSys.playTone(120, 'square', 0.3, 0.5); },
-        tada: () => { AudioSys.playTone(523, 'triangle', 0.3); setTimeout(() => AudioSys.playTone(659, 'triangle', 0.5), 120); },
-        coin: () => { AudioSys.playTone(1500, 'sine', 0.12, 0.3); setTimeout(() => AudioSys.playTone(2000, 'sine', 0.2, 0.2), 40); },
-        reroll: () => { for (let i = 0; i < 4; i++) setTimeout(() => AudioSys.playTone(700 + i * 250, 'triangle', 0.12, 0.15), i * 80); },
+        smash: () => {
+            // Enhanced hammer smash with impact
+            AudioSys.playTone(120, 'square', 0.4, 0.3);
+            AudioSys.playTone(80, 'sawtooth', 0.3, 0.2);
+            setTimeout(() => AudioSys.playTone(200, 'triangle', 0.2, 0.1), 50);
+        },
+        tada: () => {
+            AudioSys.playTone(523, 'triangle', 0.3);
+            setTimeout(() => AudioSys.playTone(659, 'triangle', 0.5), 120);
+            setTimeout(() => AudioSys.speak('Awesome!', 1.2, 1.0), 200);
+        },
+        coin: () => {
+            AudioSys.playTone(1500, 'sine', 0.12, 0.3);
+            setTimeout(() => AudioSys.playTone(2000, 'sine', 0.2, 0.2), 40);
+        },
+        reroll: () => {
+            for (let i = 0; i < 4; i++)
+                setTimeout(() => AudioSys.playTone(700 + i * 250, 'triangle', 0.12, 0.15), i * 80);
+        },
         tier: (t: number) => {
-            const freq = [523, 659, 783, 1046, 1318, 1567]; // C5 to G6
+            const freq = [523, 659, 783, 1046, 1318, 1567];
             const base = freq[Math.min(t, 5)];
             for (let i = 0; i < 4; i++) {
                 setTimeout(() => AudioSys.playTone(base * (1 + i * 0.04), 'sine', 0.2, 0.4), i * 50);
             }
         },
-        combo: () => AudioSys.playTone(300, 'sawtooth', 0.3, 0.2, 800)
+        combo: () => {
+            AudioSys.playTone(300, 'sawtooth', 0.3, 0.2, 800);
+            setTimeout(() => AudioSys.speak('Combo!', 1.4, 1.2), 100);
+        },
+        // New TNT explosion sound
+        explosion: () => {
+            AudioSys.playTone(60, 'sawtooth', 0.6, 0.4);
+            setTimeout(() => AudioSys.playTone(100, 'square', 0.5, 0.3), 50);
+            setTimeout(() => AudioSys.playTone(150, 'triangle', 0.4, 0.2), 100);
+            setTimeout(() => AudioSys.speak('Boom!', 0.8, 0.9), 150);
+        },
+        iceCrack: () => {
+            AudioSys.playTone(1200, 'triangle', 0.1, 0.2, 400);
+            setTimeout(() => AudioSys.playTone(800, 'sawtooth', 0.05, 0.1), 30);
+        }
     }
 };
 
@@ -597,6 +667,9 @@ export const SaveManager = {
                 Object.assign(GlobalStats, parsed);
                 // Ensure inventory exists
                 if (!GlobalStats.inventory) GlobalStats.inventory = { hammer: 3, bomb: 1, reroll: 1, undo: 1, merger: 1, takeover: 1, taxHaven: 1 } as Inventory;
+                if (!GlobalStats.upgrades) GlobalStats.upgrades = { magnet: 1, insurance: 1, eye: 1, combo: 0, frenzy: 0 };
+                if (GlobalStats.upgrades.combo === undefined) GlobalStats.upgrades.combo = 0;
+                if (GlobalStats.upgrades.frenzy === undefined) GlobalStats.upgrades.frenzy = 0;
                 if (GlobalStats.totalScore === undefined) GlobalStats.totalScore = 0;
 
                 // FORCE UNLOCK FOR DESIGN REVIEW
@@ -635,7 +708,9 @@ export const SaveManager = {
             thm: State.currentTheme,
             gm: State.gameMode,
             bc: State.bombCounter,
-            adv: State.adventure
+            adv: State.adventure,
+            ap: State.activePolicy,
+            bl: State.bailoutsLeft
         };
         localStorage.setItem(STATE_KEY, JSON.stringify(d));
     },
@@ -655,21 +730,47 @@ export const SaveManager = {
             State.streak = d.streak || 0;
             State.currentTheme = d.thm || 'classic';
             State.gameMode = d.gm || 'classic';
+            State.gameMode = d.gm || 'classic';
             State.bombCounter = d.bc || 8;
-            State.adventure = d.adv || { levelId: 0, progress: 0, sessionBlocks: 0, sessionLines: 0 };
+            State.adventure = d.adv || { levelId: 0, progress: 0, sessionBlocks: 0, sessionLines: 0, sessionGems: 0, movesLeft: 20, maxMoves: 20 };
+            State.activePolicy = d.ap || null;
+            State.bailoutsLeft = d.bl || 0;
 
-            State.queue = (d.queue || []).map((q: any) => {
-                if (!q) return null;
-                try {
-                    const p = new Piece(State.level, q.sid);
-                    p.color = q.c || p.color;
-                    if (q.r) p.rotate();
-                    p.scale = p.targetScaleQueue;
-                    return p;
-                } catch (e) { return null; }
-            });
-            // Ensure queue is filled if something went wrong
-            while (State.queue.length < 3) State.queue.push(new Piece(State.level));
+            // Rebuild queue from saved data
+            State.queue = [];
+            const queueData = d.queue || [];
+            for (let i = 0; i < queueData.length; i++) {
+                const q = queueData[i];
+                if (q) {
+                    try {
+                        const p = new Piece(State.level, q.sid);
+                        p.color = q.c || p.color;
+                        if (q.r) p.rotate();
+                        p.scale = p.targetScaleQueue;
+                        // Set base position for queue
+                        p.baseX = (CANVAS_WIDTH / 3 * i) + (CANVAS_WIDTH / 6);
+                        p.baseY = QUEUE_Y + QUEUE_HEIGHT / 2;
+                        p.x = p.baseX;
+                        p.y = p.baseY;
+                        State.queue.push(p);
+                    } catch (e) {
+                        State.queue.push(null);
+                    }
+                } else {
+                    State.queue.push(null);
+                }
+            }
+
+            // Ensure queue is properly filled
+            const count = (State.activePolicy === 'leanStartup' ? 1 : 3);
+            while (State.queue.length < count) {
+                const p = new Piece(State.level);
+                p.baseX = (CANVAS_WIDTH / 3 * State.queue.length) + (CANVAS_WIDTH / 6);
+                p.baseY = QUEUE_Y + QUEUE_HEIGHT / 2;
+                p.x = p.baseX;
+                p.y = p.baseY;
+                State.queue.push(p);
+            }
 
             return true;
         } catch (e) {
@@ -685,14 +786,94 @@ export function vibrate(ms: number | number[]) {
     if (State.settings.vibration && navigator.vibrate) navigator.vibrate(ms);
 }
 
+let lastToastTime = 0;
+const MIN_TOAST_INTERVAL = 500; // Prevent toast spam
+
 export function showToast(m: string, b: boolean = false) {
+    const now = Date.now();
+    // Prevent toast spam
+    if (now - lastToastTime < MIN_TOAST_INTERVAL) return;
+    lastToastTime = now;
+
     const toast = document.getElementById('toast-instruction');
     if (toast) {
         toast.innerText = m;
         toast.className = b ? 'toast toast-bonus visible' : 'toast visible';
-        setTimeout(() => toast.className = 'toast', 3000);
+        // Auto-hide after 4 seconds
+        setTimeout(() => {
+            toast.className = 'toast';
+            toast.innerText = '';
+        }, 4000);
     }
 }
+
+// --- MASCOT SYSTEM (Nano Banana) ---
+
+export const MascotSys = {
+    root: null as HTMLElement | null,
+    bubble: null as HTMLElement | null,
+    char: null as HTMLElement | null,
+    bubbleTimeout: null as any,
+    lastTalkTime: 0,
+    COOLDOWN: 10000, // 10 seconds between standard chat
+
+    init() {
+        this.root = document.getElementById('mascot-root');
+        this.bubble = document.getElementById('mascot-bubble');
+        this.char = document.getElementById('mascot-character');
+    },
+
+    show() {
+        if (!this.root) this.init();
+        this.root?.classList.remove('hidden');
+    },
+
+    hide() {
+        if (!this.root) this.init();
+        this.root?.classList.add('hidden');
+    },
+
+    say(text: string, mood: 'happy' | 'excited' | 'sad' | 'standard' = 'standard', duration: number = 3000, force: boolean = false) {
+        if (!this.bubble || !this.char) this.init();
+        if (!this.bubble || !this.char) return;
+
+        const now = Date.now();
+        if (!force && now - this.lastTalkTime < this.COOLDOWN) return;
+
+        this.lastTalkTime = now;
+        this.bubble.innerText = text;
+        this.bubble.classList.add('visible');
+
+        // Reset mood animations
+        this.char.classList.remove('mascot-excited', 'mascot-sad');
+        if (mood === 'excited') void this.char.offsetWidth, this.char.classList.add('mascot-excited');
+        if (mood === 'sad') void this.char.offsetWidth, this.char.classList.add('mascot-sad');
+
+        if (this.bubbleTimeout) clearTimeout(this.bubbleTimeout);
+        this.bubbleTimeout = setTimeout(() => {
+            if (this.bubble) this.bubble.classList.remove('visible');
+        }, duration);
+    },
+
+    onCombo(count: number) {
+        if (count >= 4) this.say("UNBELIEVABLE! 🍌🔥", 'excited', 4000, true);
+        else if (count === 3) this.say("INCREDIBLE!", 'excited', 3000, true);
+    },
+
+    onFail() {
+        const lines = ["Don't slip now!", "Keep your balance!", "You got this!", "Try a power-up?"];
+        this.say(lines[Math.floor(Math.random() * lines.length)], 'sad', 3000, true);
+    },
+
+    onWin() {
+        this.say("WE DID IT! 🏆", 'excited', 5000, true);
+    },
+
+    onGameStart() {
+        this.show();
+        this.say("Let's go!", 'happy', 3000, true);
+    }
+};
 
 export function updateCoinDisplays() {
     const hudCoins = document.getElementById('hud-coins');
@@ -715,10 +896,23 @@ export function updateHUD() {
             hudLevel.innerText = `${State.adventure.progress || 0}/${l.target}`;
             const lbl = document.getElementById('hud-level-label');
             if (lbl) lbl.innerText = 'Goal';
+
+            // Show Moves Left
+            if (hudHighScore) {
+                hudHighScore.innerText = `${State.adventure.movesLeft}`;
+                const hsl = hudHighScore.parentElement?.querySelector('.hud-label') as HTMLElement;
+                if (hsl) hsl.innerText = 'Moves';
+            }
         } else {
             hudLevel.innerText = (State.level || 1).toString();
             const lbl = document.getElementById('hud-level-label');
             if (lbl) lbl.innerText = 'Level';
+
+            if (hudHighScore) {
+                hudHighScore.innerText = (State.highScore || 0).toString();
+                const hsl = hudHighScore.parentElement?.querySelector('.hud-label') as HTMLElement;
+                if (hsl) hsl.innerText = 'Best';
+            }
         }
     }
     const modeLabel = document.querySelector('header .hud-group:first-child .hud-label') as HTMLElement;
@@ -759,42 +953,34 @@ export function updateTools() {
     const countReroll = document.getElementById('count-reroll');
     const countUndo = document.getElementById('count-undo');
 
-    if (countHammer) countHammer.innerText = inv.hammer.toString();
-    if (countBomb) countBomb.innerText = inv.bomb.toString();
-    if (countReroll) countReroll.innerText = inv.reroll.toString();
-    if (countUndo) countUndo.innerText = inv.undo.toString();
-
-    const countMerger = document.getElementById('count-merger');
-    const countTakeover = document.getElementById('count-takeover');
-    const countTaxHaven = document.getElementById('count-tax-haven');
-    if (countMerger) countMerger.innerText = inv.merger.toString();
-    if (countTakeover) countTakeover.innerText = inv.takeover.toString();
-    if (countTaxHaven) countTaxHaven.innerText = inv.taxHaven.toString();
-
     const btnHammer = document.getElementById('btn-hammer');
     const btnBomb = document.getElementById('btn-bomb');
     const btnReroll = document.getElementById('btn-reroll');
     const btnUndo = document.getElementById('btn-undo');
 
+    if (countHammer) countHammer.innerText = inv.hammer.toString();
+    if (countBomb) countBomb.innerText = inv.bomb.toString();
+    if (countReroll) countReroll.innerText = inv.reroll.toString();
+    if (countUndo) countUndo.innerText = inv.undo.toString();
+
     if (btnHammer) btnHammer.className = 'powerup-btn ' + (inv.hammer ? '' : 'disabled') + (State.activeTool === 'hammer' ? ' active' : '');
     if (btnBomb) btnBomb.className = 'powerup-btn ' + (inv.bomb ? '' : 'disabled') + (State.activeTool === 'bomb' ? ' active' : '');
     if (btnReroll) btnReroll.className = 'powerup-btn ' + (inv.reroll ? '' : 'disabled');
     if (btnUndo) btnUndo.className = 'powerup-btn ' + (inv.undo && State.previousMove ? '' : 'disabled');
-
-    const btnMerger = document.getElementById('btn-merger');
-    const btnTakeover = document.getElementById('btn-takeover');
-    const btnTaxHaven = document.getElementById('btn-tax-haven');
-    if (btnMerger) btnMerger.className = 'powerup-btn ' + (inv.merger && State.queue[0] && State.queue[1] ? '' : 'disabled');
-    if (btnTakeover) btnTakeover.className = 'powerup-btn ' + (inv.takeover ? '' : 'disabled');
-    if (btnTaxHaven) btnTaxHaven.className = 'powerup-btn ' + (inv.taxHaven ? '' : 'disabled') + (State.taxHavenMoves > 0 ? ' active' : '');
 }
 
 export function positionQueue() {
+    if (!State.queue) State.queue = [];
+
     State.queue.forEach((p, i) => {
         if (p) {
             p.baseX = (CANVAS_WIDTH / 3 * i) + (CANVAS_WIDTH / 6);
             p.baseY = QUEUE_Y + QUEUE_HEIGHT / 2;
-            if (!p.isDragging) { p.x = p.baseX; p.y = p.baseY; }
+            // Only update position if not currently being dragged
+            if (!p.isDragging) {
+                p.x = p.baseX;
+                p.y = p.baseY;
+            }
         }
     });
 }
@@ -806,14 +992,24 @@ export function fillQueue(resetUndo: boolean = true) {
     // Initialize if undefined
     if (!State.queue) State.queue = [];
 
-    // Crucial: Filter out nulls so we only count active pieces
+    // Filter out nulls and remove fully placed pieces
     State.queue = State.queue.filter(p => p !== null);
 
+    // Fill up to the required count
     while (State.queue.length < count) {
-        State.queue.push(new Piece(State.level));
+        const p = new Piece(State.level);
+        // Set initial position immediately
+        p.baseX = (CANVAS_WIDTH / 3 * State.queue.length) + (CANVAS_WIDTH / 6);
+        p.baseY = QUEUE_Y + QUEUE_HEIGHT / 2;
+        p.x = p.baseX;
+        p.y = p.baseY;
+        State.queue.push(p);
     }
+
+    // Ensure all pieces have correct positions
     positionQueue();
-    // Delay check to allow render of new pieces so users don't get 'invisible' Game Over
+
+    // Delay check to allow render of new pieces
     setTimeout(() => checkGO(), 300);
     SaveManager.saveGame();
 }
@@ -832,6 +1028,14 @@ export function canPlace(p: Piece, gx: number, gy: number): boolean {
 export function spawnPart(x: number, y: number, c: string, cnt: number, type: string = 'debris', symbol: string = '') {
     const speedMultipliers = [1.0, 1.5, 2.5];
     const speedFactor = (1.0 + ((State.level - 1) * 0.05)) * speedMultipliers[State.settings.gameSpeed];
+    const MAX_PARTICLES = 150;
+    while (State.particles.length >= MAX_PARTICLES) {
+        // Stability fix: Remove oldest non-critical (coin/gem) if possible, otherwise just oldest
+        const idx = State.particles.findIndex(p => p.type !== 'coin-fly' && p.type !== 'gem');
+        if (idx !== -1) State.particles.splice(idx, 1);
+        else State.particles.shift();
+    }
+
     for (let i = 0; i < cnt; i++) {
         let speed = type === 'explosion' ? 8 : (type === 'symbol' ? 10 : 5);
         State.particles.push({
@@ -850,6 +1054,7 @@ export function spawnPart(x: number, y: number, c: string, cnt: number, type: st
 
 export function spawnText(t: string, x: number, y: number, c: string, s: number, type: string = 'normal') {
     State.floatingTexts.push({ t: t, x: x, y: y, c: c, s: s, l: 1, type: type, tick: 0 });
+    if (State.floatingTexts.length > 30) State.floatingTexts.shift();
 }
 
 export function spawnCoinAnimation(x: number, y: number, amount: number) {
@@ -909,7 +1114,15 @@ export function addScore(pts: number) {
         State.highScore = State.score;
         localStorage.setItem(modeKey, State.highScore.toString());
     }
+    if (State.score > GlobalStats.allTimeHighScore) {
+        GlobalStats.allTimeHighScore = State.score;
+    }
     updateHUD();
+}
+
+function addCoins(amt: number) {
+    GlobalStats.coins += amt;
+    GlobalStats.totalGoldEarned = (GlobalStats.totalGoldEarned || 0) + amt;
 }
 
 export function performUndo() {
@@ -1002,18 +1215,16 @@ export function placePiece(p: Piece, gx: number, gy: number, queueIndex: number 
         else if (State.boss.movesLeft <= 0) triggerGO("Boss Escaped!");
     }
 
-    if (State.taxHavenMoves > 0) {
-        State.taxHavenMoves--;
-        if (State.taxHavenMoves === 0) showToast("Tax Haven Expired");
-    }
+
 
     handleElementalMove();
     handleEventStep();
 
     if (State.gameMode === 'adventure') {
+        State.adventure.movesLeft--;
+        updateHUD();
         State.adventure.sessionBlocks++;
         handleAdventureObstacles();
-        checkAdv();
     }
 
     if (State.moveCount % 15 === 0 && !State.investor.active) {
@@ -1029,9 +1240,11 @@ export function placePiece(p: Piece, gx: number, gy: number, queueIndex: number 
     }
 
     AudioSys.sfx.place(gx); vibrate(20);
-    if (!checkLines()) {
+    const isClearing = checkLines();
+    if (!isClearing) {
         if (State.taxHavenMoves <= 0) State.streak = 0;
         if (State.gameMode === 'bomb') handleBomb();
+        if (State.gameMode === 'adventure') checkAdv();
     }
     SaveManager.saveGlobalStats();
     checkAchievements();
@@ -1045,7 +1258,9 @@ export function checkLines(): boolean {
     for (let y = 0; y < ROWS; y++) if (State.grid[y].every(c => c)) fr.push(y);
     for (let x = 0; x < COLS; x++) { let f = true; for (let y = 0; y < ROWS; y++) if (!State.grid[y][x]) f = false; if (f) fc.push(x); }
     if (fr.length + fc.length > 0) {
-        State.streak++; State.isClearing = true; State.clearingRows = fr; State.clearingCols = fc; State.clearStartTime = Date.now();
+        State.streak++;
+        if (State.streak > GlobalStats.maxStreak) GlobalStats.maxStreak = State.streak;
+        State.isClearing = true; State.clearingRows = fr; State.clearingCols = fc; State.clearStartTime = Date.now();
         AudioSys.sfx.clear(fr.length + fc.length); vibrate(50);
         setTimeout(() => {
             execClear(fr, fc); State.isClearing = false; State.clearingRows = []; State.clearingCols = [];
@@ -1077,27 +1292,55 @@ export function execClear(fr: number[], fc: number[]) {
                 return;
             }
 
+            if (cell.type === 'ice' && cell.iceLevel > 1) {
+                cell.iceLevel--;
+                cell.flash = 1;
+                State.screenShake = 10;
+                spawnPart(lastX, lastY, '#81D4FA', 6, 'spark');
+                AudioSys.sfx.iceCrack();
+                spawnText("CRACK!", lastX, lastY - 20, '#E1F5FE', 24);
+                return;
+            }
+
+            if (cell.type === 'chain' && cell.isChained) {
+                // Linked chains: Break ALL chains on the board
+                for (let yy = 0; yy < ROWS; yy++) {
+                    for (let xx = 0; xx < COLS; xx++) {
+                        const other = State.grid[yy][xx];
+                        if (other && other.type === 'chain' && other.isChained) {
+                            other.isChained = false;
+                            other.flash = 1;
+                            spawnPart(GRID_OFFSET_X + xx * CELL_SIZE + CELL_SIZE / 2, GRID_OFFSET_Y + yy * CELL_SIZE + CELL_SIZE / 2, '#BDBDBD', 5, 'spark');
+                        }
+                    }
+                }
+                State.screenShake = 15;
+                AudioSys.sfx.smash(); // Strong audio feedback for global chain break
+                spawnText("UNLINKED!", lastX, lastY - 20, '#FFFFFF', 30);
+                return;
+            }
+
             if (cell.type === 'gold') {
-                GlobalStats.coins += 10;
+                addCoins(10);
                 spawnCoinAnimation(lastX, lastY, 2);
             }
 
             if (cell.type === 'gem') {
                 State.adventure.sessionGems++;
-                spawnPart(lastX, lastY, '#00ffcc', 12, 'spark');
+                spawnPart(lastX, lastY, '#00ffcc', 6, 'spark');
             }
 
             if (cell.type === 'multiplier' && cell.mult) {
-                State.frenzy.moves = 3;
+                State.frenzy.moves = 3 + (GlobalStats.upgrades.frenzy || 0);
                 State.frenzy.mult = cell.mult === 'square' ? 2 : 1.5;
                 showToast(`Building Frenzy! x${State.frenzy.mult}`, true);
             }
 
-            spawnPart(lastX, lastY, cell.color, 15, 'explosion');
+            spawnPart(lastX, lastY, cell.color, 4, 'explosion');
 
             // Shatter into symbols
-            spawnPart(lastX, lastY, cell.color, 3, 'symbol', '$');
-            spawnPart(lastX, lastY, '#FFD700', 2, 'symbol', '💰');
+            spawnPart(lastX, lastY, cell.color, 2, 'symbol', '$');
+            spawnPart(lastX, lastY, '#FFD700', 1, 'symbol', '💰');
 
             State.grid[y][x] = null;
         }
@@ -1105,11 +1348,12 @@ export function execClear(fr: number[], fc: number[]) {
 
     const lines = fr.length + fc.length;
     // Enhanced scoring: Better rewards for combos
-    const comboMultiplier = lines > 1 ? Math.pow(lines, 1.3) : 1;
+    const comboMultiplier = (lines > 1 ? Math.pow(lines, 1.3) : 1) * (1 + (GlobalStats.upgrades.combo * 0.1));
     const streakMultiplier = State.streak > 1 ? (1 + (State.streak * 0.3)) : 1;
     const pts = Math.floor(lines * 100 * comboMultiplier * streakMultiplier * State.level);
     addScore(pts);
     GlobalStats.linesCleared += lines;
+    if (lines > GlobalStats.maxCombo) GlobalStats.maxCombo = lines;
 
     // Check Investor progress
     if (State.investor.active && State.investor.type === 'lines') {
@@ -1119,7 +1363,14 @@ export function execClear(fr: number[], fc: number[]) {
         }
     }
 
-    if (State.gameMode === 'adventure') { State.adventure.sessionLines += lines; checkAdv(); }
+    if (State.gameMode === 'adventure') {
+        State.adventure.sessionLines += lines;
+        // Reward: +1 Move per line cleared to extend play
+        State.adventure.movesLeft += lines;
+        showToast(`+${lines} Moves!`);
+        spawnText(`+${lines} MOVES`, lastX, lastY - 50, '#00ff00', 30);
+        checkAdv();
+    }
     spawnText(`+${pts}`, lastX, lastY, '#00d2ff', 40);
 
     // Enhanced coin rewards for combos
@@ -1128,7 +1379,7 @@ export function execClear(fr: number[], fc: number[]) {
     if (lines >= 3) earnedCoins += lines * 15; // Bonus for 3+ lines
     if (State.streak > 1) earnedCoins += State.streak * 3; // Increased from 2
     if (State.streak >= 5) earnedCoins += 50; // Mega streak bonus
-    GlobalStats.coins += earnedCoins;
+    addCoins(earnedCoins);
 
     spawnCoinAnimation(lastX, lastY, earnedCoins);
     SaveManager.saveGlobalStats();
@@ -1144,6 +1395,7 @@ export function execClear(fr: number[], fc: number[]) {
         if (lines > 1) {
             spawnText(`${lines}X COMBO!`, CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, '#FFF', 60, 'combo');
             State.comboHeat = Math.min(State.comboHeat + 0.25, 1);
+            MascotSys.onCombo(lines);
         }
     }
 
@@ -1174,16 +1426,21 @@ export function updateLeague() {
 
 export function updateBossUI() {
     const bar = document.getElementById('boss-health');
-    if (bar) bar.style.width = (State.boss.health / State.boss.maxHealth * 100) + '%';
+    if (bar) bar.style.width = Math.max(0, (State.boss.health / State.boss.maxHealth * 100)) + '%';
 }
 
 function winBoss() {
     State.boss.active = false;
+    State.adventure.bossDefeatedThisSession = true;
     document.getElementById('boss-ui')?.classList.add('hidden');
     GlobalStats.bossDefeated++;
-    GlobalStats.coins += 1000;
+    addCoins(1000);
     showToast("BOSS DEFEATED! +1000 🟡", true);
     vibrate([100, 50, 100, 50, 200]);
+
+    if (State.gameMode === 'adventure') {
+        checkAdv();
+    }
 }
 
 export function spawnBoss(name: string, hp: number) {
@@ -1213,7 +1470,7 @@ export function triggerInvestor() {
 }
 
 export function completeInvestor() {
-    GlobalStats.coins += State.investor.reward;
+    addCoins(State.investor.reward);
     spawnCoinAnimation(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 20);
     showToast(`Investor Happy! +${State.investor.reward} 🟡`, true);
     State.investor.active = false;
@@ -1250,16 +1507,24 @@ export function checkAdv() {
     if (State.gameMode !== 'adventure') return;
     const l = ADVENTURE_LEVELS[State.adventure.levelId];
     let c = 0;
+
     if (l.goalType === 'lines') c = State.adventure.sessionLines;
     else if (l.goalType === 'score') c = State.score;
     else if (l.goalType === 'gems') c = State.adventure.sessionGems;
-    else c = State.adventure.sessionBlocks;
-    State.adventure.progress = c; updateHUD();
+    else if (l.goalType === 'blocks') c = State.adventure.sessionBlocks;
+    else if (l.goalType === 'boss') c = State.adventure.bossDefeatedThisSession ? 1 : 0;
+
+    State.adventure.progress = c;
+    updateHUD();
     if (c >= l.target) {
         State.isEnding = true; AudioSys.sfx.levelup();
         if (GlobalStats.adventureMaxLevel === State.adventure.levelId) GlobalStats.adventureMaxLevel++;
         SaveManager.saveGlobalStats();
         triggerGO("Level Cleared!", true);
+    } else if (State.adventure.movesLeft <= 0) {
+        // Goal not met and moves ran out
+        MascotSys.onFail();
+        triggerGO(`LEVEL FAILED: OUT OF MOVES! (${c}/${l.target})`);
     }
 }
 
@@ -1288,7 +1553,7 @@ export function handleBomb() {
 }
 
 export function checkGO() {
-    if (State.tutorial.active) return;
+    if (State.isGameOver || State.tutorial.active) return;
     if (State.queue.every(p => p === null)) { fillQueue(); return; }
     let cm = false;
     for (let p of State.queue) if (p) for (let y = 0; y < ROWS; y++) for (let x = 0; x < COLS; x++) if (canPlace(p, x, y)) cm = true;
@@ -1306,7 +1571,7 @@ export function checkGO() {
                 updateHUD();
             }, 1000);
         }
-        else triggerGO("No More Moves!");
+        else triggerGO("BOARD FULL: NO MOVES LEFT!");
     }
 }
 
@@ -1314,7 +1579,7 @@ export function triggerGO(msg: string, isWin: boolean = false) {
     // Policy Effect: Tax Shield (Bailout)
     if (State.activePolicy === 'taxShield' && State.bailoutsLeft > 0) {
         State.bailoutsLeft--;
-        showToast(`TAX BAILOUT!`, true);
+        showToast(`SAFETY NET RESCUE!`, true);
 
         // Trigger Sweep Animation
         const sweep = document.getElementById('bailout-sweep');
@@ -1333,6 +1598,7 @@ export function triggerGO(msg: string, isWin: boolean = false) {
     }
 
     State.isGameOver = true;
+    State.gameRunning = false;
     document.body.classList.remove('in-game');
     const header = document.getElementById('game-header');
     if (header) header.classList.add('hidden');
@@ -1383,7 +1649,7 @@ export function triggerGO(msg: string, isWin: boolean = false) {
                 ${isWin ? '<div style="grid-column:span 2; color:#4caf50; font-weight:bold; margin-top:5px">REWARD: +500 🟡</div>' : ''}
             </div>
         `;
-        if (isWin) GlobalStats.coins += 500;
+        if (isWin) addCoins(500);
 
         const content = go.querySelector('.overlay-content');
         if (content) {
@@ -1391,17 +1657,52 @@ export function triggerGO(msg: string, isWin: boolean = false) {
             if (existing) existing.remove();
             summary.classList.add('summary-panel');
             content.insertBefore(summary, document.getElementById('btn-restart'));
+
+            // Context-aware button logic
+            const restartBtn = document.getElementById('btn-restart');
+            if (restartBtn) {
+                // Remove old event listeners by cloning
+                const newBtn = restartBtn.cloneNode(true) as HTMLElement;
+                restartBtn.parentNode?.replaceChild(newBtn, restartBtn);
+
+                if (isWin && State.gameMode === 'adventure') {
+                    newBtn.innerHTML = 'NEXT LEVEL ⏩';
+                    newBtn.style.background = 'linear-gradient(135deg, #4caf50, #2e7d32)';
+                    newBtn.onclick = () => {
+                        // Advance to next level
+                        const nextLvl = State.adventure.levelId + 1;
+                        if (ADVENTURE_LEVELS[nextLvl]) {
+                            document.getElementById('gameover-overlay')?.classList.add('hidden');
+                            (window as any).startGame('adventure', nextLvl);
+                        } else {
+                            // No more levels (completed all)
+                            showToast("All Levels Completed! 🎉");
+                            document.getElementById('gameover-overlay')?.classList.add('hidden');
+                            // Go to home
+                            document.getElementById('home-screen')?.classList.remove('hidden');
+                            document.getElementById('game-container')?.classList.add('hidden');
+                        }
+                    };
+                } else {
+                    newBtn.innerHTML = 'TRY AGAIN 🔄';
+                    newBtn.style.background = ''; // Reset standard style
+                    newBtn.onclick = () => {
+                        document.getElementById('gameover-overlay')?.classList.add('hidden');
+                        (window as any).startGame(State.gameMode === 'adventure' ? 'adventure' : 'new', State.adventure.levelId);
+                    };
+                }
+            }
         }
-    }
 
-    const inputOverlay = document.getElementById('input-overlay');
-    const inputScore = document.getElementById('input-score');
+        const inputOverlay = document.getElementById('input-overlay');
+        const inputScore = document.getElementById('input-score');
 
-    if (!isWin && State.score > 0 && (State.leaderboard.length < 5 || State.score > State.leaderboard[State.leaderboard.length - 1].score)) {
-        if (inputOverlay) inputOverlay.classList.remove('hidden');
-        if (inputScore) inputScore.innerText = State.score.toString();
-    } else {
-        if (go) go.classList.remove('hidden');
+        if (!isWin && State.score > 0 && (State.leaderboard.length < 5 || State.score > State.leaderboard[State.leaderboard.length - 1].score)) {
+            if (inputOverlay) inputOverlay.classList.remove('hidden');
+            if (inputScore) inputScore.innerText = State.score.toString();
+        } else {
+            if (go) go.classList.remove('hidden');
+        }
     }
 }
 
@@ -1418,7 +1719,7 @@ export function checkLvl(l: number) {
         if (nl % 3 === 0) GlobalStats.inventory.bomb++; // Bomb every 3 levels
         if (nl % 5 === 0) { // Special bonus every 5 levels
             GlobalStats.inventory.undo++;
-            GlobalStats.coins += 100;
+            addCoins(100);
             showToast(`Level ${nl}! Bonus Rewards!`, true);
         }
 
@@ -1453,17 +1754,28 @@ export function checkAchievements() {
 
 export function initGame(mode: string, lvlIdx: number = 0) {
     State.isPaused = false; State.isEnding = false; State.isGameOver = false;
-    State.particles = []; State.floatingTexts = [];
+    State.particles = []; State.floatingTexts = []; State.effects = [];
     State.clearingRows = []; State.clearingCols = []; State.activeTool = null; State.previousMove = null;
-    State.score = 0; State.level = 1; State.streak = 0; State.bombCounter = 8;
-    State.adventure = { levelId: lvlIdx, progress: 0, sessionBlocks: 0, sessionLines: 0, sessionGems: 0 };
+    State.score = 0; State.displayedScore = 0; State.level = 1; State.streak = 0; State.bombCounter = 8;
+    State.queue = []; State.frenzy.moves = 0; State.boss.active = false; State.investor.active = false;
+    State.adventure = { levelId: lvlIdx, progress: 0, sessionBlocks: 0, sessionLines: 0, sessionGems: 0, movesLeft: 0, maxMoves: 0, bossDefeatedThisSession: false };
 
+
+    State.gameRunning = true;
     document.body.classList.add('in-game');
 
     const canvas = document.getElementById('gameCanvas');
     if (canvas) {
-        if (State.activePolicy === 'taxShield') canvas.classList.add('grid-hardened');
-        else canvas.classList.remove('grid-hardened');
+        if (State.activePolicy === 'taxShield') {
+            canvas.classList.add('grid-hardened');
+            if (mode !== 'resume') State.bailoutsLeft = 3;
+            showToast("SAFETY NET: 3 LIVES ACTIVATED!", true);
+        } else {
+            canvas.classList.remove('grid-hardened');
+        }
+
+        if (State.activePolicy === 'aggressive' && mode !== 'resume') showToast("MEGA BLOCKS: 2X SCORE!", true);
+        if (State.activePolicy === 'leanStartup' && mode !== 'resume') showToast("QUICK SORT: 3X INCOME!", true);
     }
 
     if (mode === 'zen') State.gameMode = 'zen';
@@ -1471,6 +1783,8 @@ export function initGame(mode: string, lvlIdx: number = 0) {
         State.gameMode = 'adventure';
         State.adventure.levelId = lvlIdx; State.adventure.progress = 0;
         State.adventure.sessionBlocks = 0; State.adventure.sessionLines = 0;
+        State.adventure.movesLeft = ADVENTURE_LEVELS[lvlIdx] ? ADVENTURE_LEVELS[lvlIdx].moves : 20;
+        State.adventure.maxMoves = State.adventure.movesLeft;
         State.level = Math.floor(lvlIdx / 3) + 1;
     }
     else if (mode === 'bomb') {
@@ -1481,14 +1795,16 @@ export function initGame(mode: string, lvlIdx: number = 0) {
 
     State.bgShapes = [];
     for (let i = 0; i < 25; i++) {
+        const themePalette = PALETTES[Math.min(State.level - 1, PALETTES.length - 1)];
         State.bgShapes.push({
             x: Math.random() * 800, y: Math.random() * 1200,
             s: 20 + Math.random() * 80,
             vx: (Math.random() - .5) * .5, vy: (Math.random() - .5) * .5,
             rot: Math.random() * 6, vr: (Math.random() - .5) * .01,
-            c: PALETTES[0][Math.floor(Math.random() * 5)]
+            c: themePalette[Math.floor(Math.random() * themePalette.length)]
         });
     }
+
 
     const modeKey = (State.gameMode === 'classic' ? STORAGE_KEY : STORAGE_KEY + '-' + State.gameMode);
     State.highScore = parseInt(localStorage.getItem(modeKey) || '0');
@@ -1534,21 +1850,35 @@ export function initGame(mode: string, lvlIdx: number = 0) {
     State.level = 1;
     State.linesClearedTotal = 0;
     State.streak = 0;
+
+    // Initialize Grid
     State.grid = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
 
-    // Load level board if available
-    if (mode === 'adventure' && ADVENTURE_LEVELS[lvlIdx] && ADVENTURE_LEVELS[lvlIdx].board) {
-        const board = ADVENTURE_LEVELS[lvlIdx].board!;
-        for (let y = 0; y < ROWS; y++) {
-            for (let x = 0; x < COLS; x++) {
-                if (board[y][x]) {
-                    if (board[y][x] === 'G') {
-                        State.grid[y][x] = { color: '#00ffcc', scale: 0, targetScale: 1, type: 'gem' };
-                    } else {
-                        State.grid[y][x] = { color: '#8d6e63', scale: 0, targetScale: 1 };
+    // Load Adventure Level Board
+    if (mode === 'adventure' && ADVENTURE_LEVELS[lvlIdx]) {
+        const lvl = ADVENTURE_LEVELS[lvlIdx];
+        if (lvl.board) {
+            for (let r = 0; r < Math.min(lvl.board.length, ROWS); r++) {
+                for (let c = 0; c < Math.min(lvl.board[r].length, COLS); c++) {
+                    const val = lvl.board[r][c];
+                    if (val) {
+                        const targetScale = 1;
+                        if (val === 'G') {
+                            State.grid[r][c] = { color: '#00FA9A', scale: 0, targetScale, type: 'gem', flash: 0 };
+                        } else if (val === 'I') {
+                            State.grid[r][c] = { color: '#81D4FA', scale: 0, targetScale, type: 'ice', iceLevel: 2, flash: 0 };
+                        } else if (val === 'C') {
+                            State.grid[r][c] = { color: '#9E9E9E', scale: 0, targetScale, type: 'chain', isChained: true, flash: 0 };
+                        } else {
+                            State.grid[r][c] = { color: '#795548', scale: 0, targetScale, type: 'normal', flash: 0 };
+                        }
                     }
                 }
             }
+        }
+        // Boss Level Spawn
+        if (lvl.goalType === 'boss') {
+            spawnBoss("TOY MASTER", 2000);
         }
     }
     State.queue = [];
@@ -1586,13 +1916,48 @@ export function initGame(mode: string, lvlIdx: number = 0) {
             if (State.adventure.levelId === 14) spawnBoss("TOY MASTER", 150);
         }
     }
+
+
+    // Explicitly fill queue if empty
+    if (!State.queue || State.queue.length === 0) {
+        fillQueue(true);
+    }
+
+    // Reset powerup bar visibility & Header
+    const pb = document.getElementById('powerup-ui');
+    if (pb) {
+        pb.classList.remove('hidden');
+        pb.style.display = 'flex';
+        pb.style.opacity = '1';
+        pb.style.pointerEvents = 'auto'; // Ensure clickable
+    }
+
+    const gh = document.getElementById('game-header');
+    if (gh) {
+        gh.classList.remove('hidden');
+        gh.style.display = 'flex';
+        gh.style.opacity = '1';
+    }
+
     updateHUD();
 
     updateTools();
     AudioSys.init();
     AudioSys.startMusic();
     collectPassiveIncome();
+    MascotSys.onGameStart();
+
+    // Force strict restart of loop
+    const canvasEl = document.getElementById('gameCanvas') as HTMLCanvasElement;
+    if (canvasEl) {
+        const ctx = canvasEl.getContext('2d');
+        if (ctx) {
+            // Cancel any existing loop if possible (though we don't track the ID globally, re-calling is usually safe if state is reset)
+            gameLoop(ctx);
+        }
+    }
 }
+
 
 export function collectPassiveIncome() {
     const now = Date.now();
@@ -1608,7 +1973,7 @@ export function collectPassiveIncome() {
     if (rate > 0) {
         const income = Math.floor(diffHours * rate);
         if (income > 0) {
-            GlobalStats.coins += income;
+            addCoins(income);
             showToast(`Toy Box Generated +${income} 🟡`, true);
             SaveManager.saveGlobalStats();
             updateHUD();
@@ -1617,38 +1982,7 @@ export function collectPassiveIncome() {
     GlobalStats.lastPassiveCollection = now;
 }
 
-export function performMerger() {
-    // Combine queue pieces into one super piece (e.g., piece 0 and 1)
-    if (State.queue[0] && State.queue[1]) {
-        showToast("Mixing Toys...");
-        State.queue[0].type = 'gold'; // Upgrade the first one
-        State.queue[1] = null;
-        GlobalStats.inventory.takeover--; // Using 'takeover' for naming consistency in inventory call
-        positionQueue();
-        updateTools();
-    }
-}
 
-export function performTakeover() {
-    showToast("Magic Splash!", true);
-    for (let r = 2; r < 5; r++) {
-        for (let c = 2; c < 5; c++) {
-            if (State.grid[r][c]) {
-                State.grid[r][c].type = 'gold';
-                State.grid[r][c].color = '#FFD700';
-            }
-        }
-    }
-    GlobalStats.inventory.takeover--;
-    updateHUD();
-}
-
-export function performTaxHaven() {
-    showToast("Bubble Shield!", true);
-    State.taxHavenMoves = 10;
-    GlobalStats.inventory.taxHaven--;
-    updateTools();
-}
 
 export function setupTutorial(s: number) {
     State.queue = [null, null, null]; State.grid = Array(8).fill(null).map(() => Array(8).fill(null));
@@ -1678,7 +2012,7 @@ export function buyItem(type: keyof Inventory, price: number) {
     }
 }
 
-export function buyBailout() {
+export function buyExtraLife() {
     const cost = 10000;
     if (GlobalStats.coins >= cost) {
         GlobalStats.coins -= cost;
@@ -1782,3 +2116,10 @@ function handleEventStep() {
         updateHUD();
     }
 }
+
+setInterval(() => {
+    if (!State.isGameOver && !State.isPaused && (State.gameRunning || State.moveCount > 0)) {
+        GlobalStats.timePlayed = (GlobalStats.timePlayed || 0) + 1;
+        if (GlobalStats.timePlayed % 60 === 0) SaveManager.saveGlobalStats();
+    }
+}, 1000);

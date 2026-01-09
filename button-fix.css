@@ -1,0 +1,43 @@
+/* FINAL OVERRIDE - Ensure buttons are 80px everywhere */
+.tycoon-btn {
+    width: 80px !important;
+    height: 80px !important;
+    min-width: 80px !important;
+    min-height: 80px !important;
+}
+
+.tycoon-btn .t-icon {
+    font-size: 28px !important;
+}
+
+.tycoon-btn .t-label {
+    font-size: 11px !important;
+}
+
+.tycoon-btn.hq-active {
+    width: 80px !important;
+    height: 80px !important;
+}
+
+.tycoon-btn.hq-active .t-icon {
+    font-size: 28px !important;
+}
+
+.tycoon-btn.hq-active .t-label {
+    font-size: 11px !important;
+}
+
+/* Force all media queries */
+@media (max-width: 480px) {
+    .tycoon-btn {
+        width: 80px !important;
+        height: 80px !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .tycoon-btn {
+        width: 80px !important;
+        height: 80px !important;
+    }
+}

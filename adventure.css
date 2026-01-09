@@ -1,0 +1,197 @@
+/* --- PREMIUM ADVENTURE STYLES --- */
+
+/* Adventure List Grid Containers */
+#adventure-list,
+.adventure-map {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 15px !important;
+    padding: 10px 5px 30px 5px !important;
+    width: 100%;
+    overflow-y: auto !important;
+    max-height: 80vh !important;
+}
+
+/* Premium Level Card */
+/* Premium Level Card */
+.level-card {
+    background: linear-gradient(135deg, #5D4037 0%, #3E2723 100%);
+    /* Fallback */
+    background-size: cover !important;
+    background-position: center !important;
+    border: 3px solid #8D6E63;
+    border-radius: 20px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    min-height: 160px;
+    position: relative;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.4), inset 0 2px 0 rgba(255, 255, 255, 0.1);
+    transition: transform 0.2s cubic-bezier(0.3, 0.5, 0.5, 1);
+    overflow: hidden;
+    /* For overlay clipping */
+}
+
+/* Dark overlay for readability */
+.level-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(62, 39, 35, 0.3), rgba(62, 39, 35, 0.85));
+    z-index: 0;
+}
+
+/* Ensure content is above overlay */
+.level-header,
+.level-content,
+.level-footer {
+    z-index: 1;
+    position: relative;
+}
+
+.level-card:active {
+    transform: translateY(3px);
+    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.4);
+}
+
+.level-card.active {
+    border-color: #FFB74D;
+    box-shadow: 0 0 15px rgba(255, 183, 77, 0.3), 0 6px 0 rgba(0, 0, 0, 0.4);
+}
+
+.level-card.locked {
+    filter: grayscale(1) brightness(0.6);
+    /* Darker for locked */
+    opacity: 0.8;
+    border-color: #4E342E;
+    pointer-events: none;
+}
+
+/* Card Header (Badge + Stars) */
+.level-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 25px;
+    /* Spacing for floating badge look */
+}
+
+.level-badge {
+    background: #43A047;
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 900;
+    box-shadow: 0 4px 0 #1B5E20;
+    border: 2px solid #66BB6A;
+    margin-top: 5px;
+}
+
+.level-card.locked .level-badge {
+    background: #5D4037;
+    border-color: #8D6E63;
+    box-shadow: none;
+    color: #A1887F;
+}
+
+.level-stars {
+    font-size: 12px;
+    color: #FFC107;
+    letter-spacing: 2px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.3);
+    padding: 4px 8px;
+    border-radius: 10px;
+}
+
+/* Card Content */
+.level-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 10px;
+    z-index: 1;
+}
+
+.level-title {
+    font-family: 'League Spartan', sans-serif;
+    font-size: 18px;
+    font-weight: 900;
+    color: #FFD54F;
+    text-transform: uppercase;
+    line-height: 1.1;
+    margin-bottom: 8px;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+}
+
+.level-mission {
+    font-size: 10px;
+    color: #EFEBE9;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 6px 10px;
+    border-radius: 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.mission-icon {
+    font-size: 12px;
+}
+
+/* Footer Status */
+.level-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: auto;
+}
+
+.status-indicator {
+    font-size: 10px;
+    font-weight: 900;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 1px;
+}
+
+.status-indicator.active {
+    color: #66BB6A;
+    text-shadow: 0 0 5px rgba(102, 187, 106, 0.5);
+}
+
+.status-indicator.completed {
+    color: #FFD54F;
+}
+
+/* Overlay Adjustments for Adventure */
+#adventure-overlay .overlay-content {
+    width: 90%;
+    max-width: 400px;
+    padding-top: 40px;
+    justify-content: flex-start;
+}
+
+#btn-adventure-back {
+    width: 100%;
+    margin-top: 10px;
+    background: #D7CCC8 !important;
+    color: #5D4037 !important;
+    border: 2px solid #A1887F !important;
+    border-bottom: 4px solid #8D6E63 !important;
+    font-weight: 900;
+    text-transform: uppercase;
+}

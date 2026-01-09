@@ -3,13 +3,21 @@
 
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BlockRiser · DeeJay Labs</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;700;800;900&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/index.css">
+    <link rel="stylesheet" href="/toy-box.css">
+    <link rel="stylesheet" href="/adventure.css">
+    <link rel="stylesheet" href="/boosters.css">
+    <link rel="stylesheet" href="/mobile-fixes.css">
+    <link rel="stylesheet" href="/world-backgrounds.css">
+    <link rel="stylesheet" href="/button-fix.css">
+    <link rel="stylesheet" href="/mascot.css">
     <link rel="manifest" href="/manifest.webmanifest">
     <script>
         if ('serviceWorker' in navigator) {
@@ -62,7 +70,6 @@
             <div id="hud-policy" class="hud-value" style="font-size:14px"></div>
             <div id="bailout-tokens" class="bailout-tokens"></div>
         </div>
-        <button id="pause-btn" class="icon-btn">⏸</button>
     </header>
 
     <main id="game-container">
@@ -78,7 +85,7 @@
 
         <div id="toast-instruction" class="toast">Drag pieces to the grid</div>
 
-        <div id="powerup-ui" class="powerup-bar hidden">
+        <div id="powerup-ui" class="powerup-bar">
             <button id="btn-hammer" class="powerup-btn">
                 <span class="powerup-icon">🔨</span>
                 <span id="count-hammer" class="powerup-count">0</span>
@@ -92,21 +99,22 @@
                 <span id="count-reroll" class="powerup-count">0</span>
             </button>
             <button id="btn-undo" class="powerup-btn">
-                <span class="powerup-icon">↩️</span>
+                <img src="/icon_undo.svg" class="shop-icon-img-small" alt="Undo">
                 <span id="count-undo" class="powerup-count">0</span>
             </button>
-            <button id="btn-merger" class="powerup-btn">
-                <span class="powerup-icon">🧬</span>
-                <span id="count-merger" class="powerup-count">0</span>
+            <div class="separator-vertical"></div>
+            <button id="pause-btn" class="powerup-btn btn-dark">
+                <span class="powerup-icon" style="font-size: 24px;">⏸</span>
             </button>
-            <button id="btn-takeover" class="powerup-btn">
-                <span class="powerup-icon">🏢</span>
-                <span id="count-takeover" class="powerup-count">0</span>
-            </button>
-            <button id="btn-tax-haven" class="powerup-btn">
-                <span class="powerup-icon">🏝️</span>
-                <span id="count-tax-haven" class="powerup-count">0</span>
-            </button>
+        </div>
+
+        <!-- Nano Banana Mascot -->
+        <div id="mascot-root" class="mascot-container hidden">
+            <div id="mascot-bubble" class="speech-bubble">Hi! I'm Nano!</div>
+            <div id="mascot-character" class="nano-banana">
+                🍌
+                <div class="mascot-visor"></div>
+            </div>
         </div>
     </main>
 
@@ -145,22 +153,13 @@
 
             <div class="action-stack">
                 <button id="btn-play-menu" class="btn-premium btn-play">
-                    <div style="display:flex; flex-direction:column; align-items:center">
-                        <span class="btn-label">NEW GAME</span>
-                        <span class="btn-subtext" style="color:rgba(255,255,255,0.7)">START A NEW ADVENTURE</span>
-                    </div>
+                    <span class="btn-label">NEW GAME</span>
                 </button>
                 <button id="btn-resume" class="btn-premium btn-resume hidden">
-                    <div style="display:flex; flex-direction:column; align-items:center">
-                        <span class="btn-label">CONTINUE</span>
-                        <span class="btn-subtext" style="color:rgba(255,255,255,0.7)">RESUME YOUR GAME</span>
-                    </div>
+                    <span class="btn-label">CONTINUE</span>
                 </button>
                 <button id="btn-tutorial" class="btn-premium btn-tutorial">
-                    <div style="display:flex; flex-direction:column; align-items:center">
-                        <span class="btn-label">HOW TO PLAY</span>
-                        <span class="btn-subtext" style="color:rgba(255,255,255,0.7)">LEARN THE BASICS</span>
-                    </div>
+                    <span class="btn-label">HOW TO PLAY</span>
                 </button>
             </div>
 
@@ -179,7 +178,7 @@
                     <span class="t-label">WORLDS</span>
                 </button>
             </div>
-            <div class="brand-footer-premium">DEEJAY LABS</div>
+            <div class="brand-footer-premium">DeeJay Labs</div>
         </div>
     </div>
 
@@ -259,10 +258,14 @@
     <!-- Policy Selection -->
     <div id="policy-overlay" class="overlay hidden">
         <div class="overlay-content">
-            <h2 class="title-large">POWER ROOM</h2>
-            <p class="subtitle" style="margin-bottom:10px">SELECT SPECIAL POWER</p>
-            <div id="policy-list" class="shop-grid" style="width:100%"></div>
+            <h2 class="title-large">BOOSTERS</h2>
+            <p class="subtitle" style="margin-bottom:10px">CHOOSE YOUR POWER UP</p>
+            <div id="policy-list" class="booster-grid" style="width:100%"></div>
             <button id="btn-policy-skip" class="btn-secondary" style="margin-top:10px">Skip Power</button>
+
+            <div class="brand-footer">
+                <span class="brand-logo-text">DeeJay Labs</span>
+            </div>
         </div>
     </div>
 
@@ -282,33 +285,33 @@
             <div id="shop-coin-display" class="coin-balance-display" style="margin-bottom:10px">0 🟡</div>
             <div id="shop-container" class="shop-grid">
                 <div class="shop-item" onclick="buyItem('hammer', 200)">
-                    <span class="shop-icon">🔨</span>
+                    <img src="/icon_hammer.svg" class="shop-icon-img" alt="Hammer">
                     <div class="shop-name">Hammer</div>
                     <div class="shop-desc">Remove 1 block</div>
                     <div class="shop-price">200 🟡</div>
                 </div>
                 <div class="shop-item" onclick="buyItem('bomb', 500)">
-                    <span class="shop-icon">💣</span>
+                    <img src="/icon_tnt.svg" class="shop-icon-img" alt="TNT">
                     <div class="shop-name">TNT</div>
                     <div class="shop-desc">3x3 Blast!</div>
                     <div class="shop-price">500 🟡</div>
                 </div>
                 <div class="shop-item" onclick="buyItem('reroll', 150)">
-                    <span class="shop-icon">🔄</span>
+                    <img src="/icon_reroll.svg" class="shop-icon-img" alt="Reroll">
                     <div class="shop-name">Reroll</div>
                     <div class="shop-desc">Get new pieces</div>
                     <div class="shop-price">150 🟡</div>
                 </div>
                 <div class="shop-item" onclick="buyItem('undo', 300)">
-                    <span class="shop-icon">↩️</span>
+                    <img src="/icon_undo.svg" class="shop-icon-img" alt="Undo">
                     <div class="shop-name">Undo</div>
                     <div class="shop-desc">Undo last move</div>
                     <div class="shop-price">300 🟡</div>
                 </div>
             </div>
             <div id="policy-shop" class="shop-grid" style="margin-top:10px"></div>
+            <button id="btn-close-shop" class="btn-secondary" style="margin-top:15px; width: 100%;">Close</button>
         </div>
-        <button id="btn-close-shop" class="btn-secondary" style="margin-top:10px">Close</button>
     </div>
 
     <!-- Daily Rewards -->
@@ -336,7 +339,7 @@
             </div>
             <div class="pause-brand">
                 <div class="brand-footer-premium">DEVELOPED BY</div>
-                <div class="deejay-logo-pause">DEEJAY LABS</div>
+                <div class="deejay-logo-pause">DeeJay Labs</div>
             </div>
         </div>
     </div>
@@ -365,22 +368,36 @@
     <!-- Leaderboard -->
     <div id="leaderboard-overlay" class="overlay hidden">
         <div class="overlay-content">
-            <h2 class="title-large">TOP PLAYERS</h2>
-            <div id="leaderboard-list" class="glass-panel" style="width:100%; margin-top:10px; padding:0"></div>
-            <button id="btn-close-leaderboard" class="btn-secondary">Close</button>
+            <h2 class="title-large">LEADERBOARD</h2>
+            <div class="tab-container" style="display:flex; gap:10px; margin-bottom:15px; width:100%">
+                <button id="btn-tab-local" class="tab-btn active" style="flex:1">LOCAL</button>
+                <button id="btn-tab-global" class="tab-btn" style="flex:1">GLOBAL</button>
+            </div>
+            <div id="leaderboard-list" class="glass-panel"
+                style="width:100%; margin-top:0px; padding:0; max-height: 300px; overflow-y: auto;"></div>
+            <button id="btn-close-leaderboard" class="btn-secondary" style="margin-top:15px; width:100%">Close</button>
         </div>
     </div>
 
-    <!-- Stats -->
+    <!-- YOUR STATS -->
     <div id="stats-overlay" class="overlay hidden">
-        <div class="overlay-content">
-            <h2 class="title-large">YOUR STATS</h2>
-            <div id="stats-grid" class="stats-container" style="margin:10px 0"></div>
-            <h3 style="text-align:left; width:100%; font-size:14px; margin-bottom:5px">UPGRADE TREE</h3>
-            <div id="upgrades-list" class="shop-grid" style="margin-bottom:10px; max-height: 200px;"></div>
-            <h3 style="text-align:left; width:100%; font-size:14px; margin-bottom:5px">ACHIEVEMENTS</h3>
+        <div class="overlay-content stats-panel-scroll">
+            <h2 class="title-large pulsate">YOUR STATS</h2>
+            <div id="stats-grid" class="stats-container"></div>
+
+            <div class="section-divider">
+                <span class="divider-text">UPGRADE TREE</span>
+            </div>
+            <div id="upgrades-list" class="shop-grid"></div>
+
+            <div class="section-divider">
+                <span class="divider-text">ACHIEVEMENTS</span>
+            </div>
             <div id="achievements-grid" class="achievements-list"></div>
-            <button id="btn-close-stats" class="btn-secondary" style="margin-top:10px">Close</button>
+
+            <button id="btn-close-stats" class="btn-premium btn-play" style="margin-top:20px; width:100%">
+                <span class="btn-label">BACK TO MENU</span>
+            </button>
         </div>
     </div>
 
@@ -389,7 +406,19 @@
         <div class="overlay-content">
             <h2 class="title-large">THEMES</h2>
             <div id="theme-grid" class="grid-select" style="margin-top:10px"></div>
-            <button id="btn-close-themes" class="btn-secondary" style="margin-top:10px">Close</button>
+
+            <h3 style="margin-top:20px; font-size:16px; letter-spacing:1px">BLOCK SKINS</h3>
+            <div id="skin-grid" class="grid-select" style="margin-top:10px; grid-template-columns: repeat(2, 1fr);">
+                <button class="btn-premium skin-btn" onclick="setSkin('default')">DEFAULT</button>
+                <button class="btn-premium skin-btn" onclick="setSkin('crystal')"
+                    style="background: linear-gradient(135deg, #81D4FA, #0288D1);">CRYSTAL</button>
+                <button class="btn-premium skin-btn" onclick="setSkin('neon')"
+                    style="background: #000; border: 2px solid #00f2ff; color: #00f2ff;">NEON</button>
+                <button class="btn-premium skin-btn" onclick="setSkin('wood')"
+                    style="background: #8D6E63;">WOOD</button>
+            </div>
+
+            <button id="btn-close-themes" class="btn-secondary" style="margin-top:20px">Close</button>
         </div>
     </div>
 
@@ -441,13 +470,17 @@
                     <button id="btn-vib-toggle" class="btn-toggle on">ON</button>
                 </div>
             </div>
-            <button id="btn-reset-data" class="btn-red btn-3d"
-                style="font-size:10px; width:auto; padding:8px 20px">Reset All Data</button>
-            <button id="btn-close-settings" class="btn-secondary" style="margin-top:10px">Close</button>
+            <button id="btn-reset-data" class="btn-premium btn-adventure"
+                style="margin-top:20px; width:100%; border-bottom-color: #c62828 !important; background: #ef5350 !important;">
+                <span class="btn-label">RESET ALL DATA</span>
+            </button>
+            <button id="btn-close-settings" class="btn-premium btn-play" style="margin-top:10px; width:100%">
+                <span class="btn-label">CLOSE</span>
+            </button>
         </div>
     </div>
 
-    <footer class="main-footer">DEEJAY LABS</footer>
+    <footer class="main-footer">DeeJay Labs</footer>
 
     <script type="module" src="/index.tsx"></script>
     <script>

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">BlockRiser</string>
+    <string name="title_activity_main">BlockRiser</string>
+    <string name="package_name">com.deviljawale.blockriser</string>
+    <string name="custom_url_scheme">com.deviljawale.blockriser</string>
+</resources>

@@ -331,3 +331,13 @@ The game is now more:
 - **Mechanical UI**: Buttons and HUD resemble physical wooden/brass components
 
 
+
+## 11. ADVENTURE MODE REDESIGN (Block Blast Style)
+- **New Progression Logic**: implemented detailed level structure with 10 Block Blast style levels.
+- **Move Limits**: Added move limit mechanic to Adventure Mode levels (e.g., Clear 30 gems in 40 moves).
+- **Goal Types**: Replicated classic goals: "Collect Toys (Gems)", "Score Points", "Clear Lines", "Defeat Boss".
+- **UI Updates**: 
+    - HUD now displays "MOVES" instead of "BEST" in Adventure Mode.
+    - Adventure Menu cards show specific Move Limits for each level.
+- **Fail Condition**: Running out of moves without meeting the goal triggers Game Over.
+- **Victory Condition**: Meeting the goal triggers Level Complete + Next Level unlock.

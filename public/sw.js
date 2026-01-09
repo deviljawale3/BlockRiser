@@ -3,10 +3,26 @@ const ASSETS = [
     '/',
     '/index.html',
     '/index.css',
-    '/src/main.ts',
-    '/src/game.ts',
-    '/src/render.ts',
-    '/src/input.ts'
+    '/toy-box.css',
+    '/adventure.css',
+    '/boosters.css',
+    '/mobile-fixes.css',
+    '/world-backgrounds.css',
+    '/button-fix.css',
+    '/bg_1.png',
+    '/bg_2.png',
+    '/bg_3.png',
+    '/bg_4.png',
+    '/bg_5.png',
+    '/bg_6.png',
+    '/bg_robot.svg',
+    '/bg_jungle.svg',
+    '/bg_hero.svg',
+    '/bg_master.svg',
+    '/icon_hammer.svg',
+    '/icon_tnt.svg',
+    '/icon_reroll.svg',
+    '/icon_undo.svg'
 ];
 
 self.addEventListener('install', (e) => {

@@ -26,13 +26,141 @@ body {
     padding: 0;
     width: 100vw;
     height: 100vh;
-    background: #3E2723;
+    /* Premium Wooden Table Background */
+    background: radial-gradient(circle at 30% 40%, rgba(109, 76, 65, 0.3) 0%, transparent 50%), radial-gradient(circle at 70% 60%, rgba(93, 64, 55, 0.3) 0%, transparent 50%), linear-gradient(135deg, #6D4C41 0%, #5D4037 50%, #4E342E 100%);
+    background-size: 200% 200%, 200% 200%, 100% 100%;
+    animation: woodGrain 20s ease-in-out infinite;
     color: var(--text-color);
     font-family: var(--font-family);
     display: flex;
     flex-direction: column;
     align-items: center;
     overflow: hidden;
+    position: relative;
+    will-change: background-position;
+}
+
+/* Subtle wood grain animation */
+@keyframes woodGrain {
+
+    0%,
+    100% {
+        background-position: 0% 0%, 100% 100%, 0% 0%;
+    }
+
+    50% {
+        background-position: 100% 100%, 0% 0%, 0% 0%;
+    }
+}
+
+/* Add subtle wood texture overlay */
+body::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        repeating-linear-gradient(90deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 0, 0, 0.03) 2px,
+            rgba(0, 0, 0, 0.03) 4px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Floating dust particles for depth */
+body::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 50px 50px, 80px 80px;
+    background-position: 0 0, 40px 60px;
+    animation: floatParticles 30s linear infinite;
+    pointer-events: none;
+    opacity: 0.3;
+    z-index: 0;
+    will-change: transform;
+}
+
+@keyframes floatParticles {
+    0% {
+        transform: translateY(0);
+    }
+
+    100% {
+        transform: translateY(-100px);
+    }
+}
+
+@keyframes woodGrain {
+
+    0%,
+    100% {
+        background-position: 0% 0%, 0% 0%, 0% 0%;
+        filter: brightness(1);
+    }
+
+    50% {
+        background-position: 10% 5%, -5% 10%, 0% 0%;
+        filter: brightness(1.1);
+    }
+}
+
+/* Ensure game elements are above background */
+canvas {
+    position: relative;
+    z-index: 1;
+}
+
+header {
+    position: relative;
+    z-index: 2;
+}
+
+/* Toast Notification System */
+.toast {
+    position: fixed;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(62, 39, 35, 0.95);
+    color: #FFD54F;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 800;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+    border: 2px solid rgba(255, 213, 79, 0.5);
+    z-index: 9999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    max-width: 80vw;
+    word-wrap: break-word;
+}
+
+.toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+    pointer-events: auto;
+}
+
+.toast.toast-bonus {
+    background: linear-gradient(135deg, #FFB74D, #FF9800);
+    color: #3E2723;
+    border-color: #FFD54F;
+    font-size: 18px;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.3);
 }
 
 #splash-screen {
@@ -91,6 +219,7 @@ body {
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
     border-radius: 12px;
     backdrop-filter: blur(5px);
+    will-change: transform;
 }
 
 .shape-1 {
@@ -248,12 +377,28 @@ body.flash {
 header {
     width: 100%;
     max-width: 500px;
-    padding: 10px 15px;
+    padding: calc(10px + env(safe-area-inset-top)) 15px 10px 15px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
+    /* Changed from space-between to allow scroll */
     align-items: center;
+    gap: 10px;
+    /* Consistent gap */
+    overflow-x: auto;
+    /* Enable scroll if content overflows */
+    white-space: nowrap;
+    /* Prevent wrapping */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
     z-index: 10;
     transition: opacity 0.3s, transform 0.3s;
+}
+
+header::-webkit-scrollbar {
+    display: none;
+    /* Chrome, Safari, Opera */
 }
 
 header.hidden {
@@ -262,406 +407,115 @@ header.hidden {
     pointer-events: none;
 }
 
-.hud-group {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: #4E342E;
-    background-image: linear-gradient(to bottom, #5D4037, #3E2723);
-    padding: 8px 12px;
-    border-radius: 14px;
-    border: 2px solid #8D6E63;
-    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
-    min-width: 80px;
-}
-
-.hud-label {
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    color: #FFCC80;
-    margin-bottom: 2px;
-    text-shadow: 1px 1px 0 #3E2723;
-}
-
-.hud-value {
-    font-size: 20px;
-    font-weight: 800;
-    color: #FFF8E1;
-    text-shadow: 1px 2px 0 #3E2723;
-    font-feature-settings: "tnum";
-    font-variant-numeric: tabular-nums;
-}
-
-.hud-value.highlight {
-    color: #FFB74D;
-}
-
-.hud-value.gold {
-    color: #FFD54F;
-    text-shadow: 0 0 5px rgba(255, 213, 79, 0.5);
-}
-
-button.icon-btn {
-    background: linear-gradient(to bottom, #8D6E63, #5D4037);
-    border: 1px solid #A1887F;
-    border-bottom: 4px solid #3E2723;
-    color: #FFE0B2;
-    border-radius: 12px;
-    width: 44px;
-    height: 44px;
-    /* Increased height for 3D effect */
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-    text-shadow: 1px 1px 0 #3E2723;
-}
-
-button.icon-btn:active {
-    transform: translateY(3px);
-    border-bottom-width: 1px;
-    box-shadow: none;
-}
-
-.powerup-bar {
-    position: fixed;
-    bottom: 3.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    width: min(98%, 520px);
-    display: flex;
-    justify-content: center;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    gap: 8px;
-    padding: 10px 5px;
-    z-index: 6000;
-    pointer-events: none;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-}
-
-.powerup-bar::-webkit-scrollbar {
-    display: none;
-}
-
-.powerup-btn {
-    pointer-events: auto;
-    background: linear-gradient(to bottom, #5D4037, #3E2723);
-    border: 2px solid #8D6E63;
-    border-radius: 12px;
-    padding: 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    color: #FFCC80;
-    min-width: 58px;
-    height: 58px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
-    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.powerup-btn:active {
-    transform: scale(0.95);
-}
-
-.powerup-btn.active {
-    border-color: #FFB74D;
-    background: linear-gradient(to bottom, #6D4C41, #4E342E);
-    transform: scale(1.1);
-    box-shadow: 0 0 15px rgba(255, 183, 77, 0.4);
-}
-
-.powerup-btn.disabled {
-    opacity: 0.5;
-    filter: grayscale(1);
-}
-
-.powerup-icon {
-    font-size: 20px;
-    margin-bottom: 2px;
-}
-
-.powerup-count {
-    font-size: 10px;
-    font-weight: 700;
-    color: var(--accent-color);
-}
-
-#game-container {
-    position: relative;
-    flex: 1;
-    width: 100%;
-    max-width: 500px;
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-start;
-    align-items: center;
-    padding: 10px 10px 0;
-    overflow: visible !important;
-    /* Critical to see pieces below board */
-}
-
-canvas {
-    width: 100%;
-    height: auto;
-    aspect-ratio: 2 / 3;
-    max-height: 80vh;
-    /* Increased to allow drawing area for pieces */
-    display: block;
-    border-radius: 24px;
-    box-shadow: 0 0 40px rgba(0, 0, 0, 0.8),
-        inset 0 0 20px rgba(0, 210, 255, 0.1);
-    background: rgba(10, 10, 20, 0.85);
-    border: 2px solid rgba(255, 255, 255, 0.1);
-    z-index: 1;
-}
-
-.toast {
-    position: absolute;
-    bottom: 20%;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(10px);
-    padding: 10px 20px;
-    border-radius: 30px;
-    font-size: 14px;
-    font-weight: 600;
-    pointer-events: none;
-    opacity: 0;
-    transform: translateY(20px);
-    transition: opacity 0.4s, transform 0.4s;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-    z-index: 25;
-    text-align: center;
-}
-
-.toast.visible {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.toast-bonus {
-    border-color: #FFD700;
-    color: #FFD700;
-    background: rgba(20, 20, 10, 0.9);
-}
-
-footer {
-    width: 100%;
-    padding: 15px;
-    text-align: center;
-    font-size: 12px;
-    color: rgba(255, 255, 255, 0.4);
-    z-index: 20;
-    pointer-events: none;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    background: linear-gradient(to top, rgba(15, 12, 41, 0.9), transparent);
-}
-
-footer span {
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.7);
-}
-
+/* --- CORE OVERLAY STYLE --- */
 .overlay {
-    position: absolute;
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(circle at center, rgba(62, 39, 35, 0.95) 0%, rgba(27, 14, 10, 0.98) 100%);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    z-index: 1000;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 40px 0;
-    z-index: 500;
-    overflow-y: auto;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-}
-
-@media (max-height: 750px) {
-    .overlay {
-        padding: 15px 0;
-    }
-}
-
-.overlay.hidden {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none !important;
-}
-
-.overlay-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     justify-content: center;
-    width: 90%;
-    max-width: 360px;
-    padding: 0;
-    margin: auto 0;
-    gap: 6px;
-    transform: scale(1);
-    transition: transform 0.3s;
-    max-height: 100vh;
-    overflow-y: auto;
+    align-items: center;
     pointer-events: auto;
-    -ms-overflow-style: none;
-    scrollbar-width: none;
 }
 
-.overlay-content::-webkit-scrollbar {
-    display: none;
-}
+/* --- PREMIUM UI COMPONENTS --- */
 
-.overlay.hidden .overlay-content {
-    transform: scale(0.9);
-}
-
-/* --- PREMIUM DESIGN SYSTEM (WOOD) --- */
-:root {
-    --accent-glow: 0 0 10px rgba(255, 183, 77, 0.3);
-    --panel-bg: #4E342E;
-    --glass-border: 2px solid #8D6E63;
-}
-
-.title-large {
-    font-size: 42px;
-    font-weight: 950;
-    margin: 0;
-    line-height: 1.0;
-    text-transform: uppercase;
-    letter-spacing: -2px;
-    white-space: nowrap;
-    background: linear-gradient(180deg, #FFD54F 0%, #FFB300 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    filter: drop-shadow(0 2px 0 #3E2723) drop-shadow(0 4px 0 #3E2723);
-    text-align: center;
+/* HUD: Inlaid Wood Panel Look */
+.hud-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: linear-gradient(to bottom, #4E342E, #3E2723);
+    padding: 6px 14px;
+    border-radius: 16px;
+    border: 3px solid #6D4C41;
+    border-bottom: 5px solid #3E2723;
+    /* Deep styling */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5), inset 0 2px 4px rgba(255, 255, 255, 0.05);
+    min-width: 70px;
     flex-shrink: 0;
-    font-family: 'League Spartan', sans-serif;
-    animation: titleFloat 4s infinite ease-in-out;
+    transition: transform 0.2s;
 }
 
-@keyframes titleFloat {
-
-    0%,
-    100% {
-        transform: translateY(0) rotate(-1deg);
-    }
-
-    50% {
-        transform: translateY(-5px) rotate(1deg);
-    }
+.hud-group:active {
+    transform: scale(0.95);
 }
 
-.subtitle {
-    font-size: 10px;
-    margin: 0 0 10px 0;
-    color: #FFB74D;
-    letter-spacing: 5px;
+.hud-label {
+    font-size: 11px;
+    font-weight: 800;
     text-transform: uppercase;
+    color: #D7CCC8;
+    margin-bottom: 2px;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.8);
+}
+
+.hud-value {
+    font-size: 18px;
     font-weight: 900;
-    text-align: center;
-    flex-shrink: 0;
-    opacity: 0.9;
-    text-shadow: 1px 1px 0 #3E2723;
+    color: #FFF;
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+    font-variant-numeric: tabular-nums;
 }
 
-/* --- PREMIUM BUTTON STYLES (WOOD) --- */
+/* BUTTONS: Premium 3D "Candy" Look */
 .btn-3d {
     position: relative;
     border: none;
-    border-radius: 12px;
-    color: #FFF3E0;
-    font-weight: 800;
+    border-radius: 16px;
+    color: #FFF;
+    font-weight: 900;
     text-transform: uppercase;
-    font-size: 15px;
-    letter-spacing: 1.2px;
+    font-size: 18px;
+    letter-spacing: 1px;
     width: 100%;
-    padding: 14px 0;
-    transition: all 0.1s ease-out;
+    padding: 16px 0;
+    transition: all 0.15s cubic-bezier(0.3, 0, 0.4, 1);
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     font-family: 'League Spartan', sans-serif;
-    border-bottom: 4px solid rgba(0, 0, 0, 0.3);
-    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+
+    /* Base 3D structure */
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3), 0 10px 10px rgba(0, 0, 0, 0.2);
+    transform: translateY(0);
 }
 
 .btn-3d:active {
-    transform: translateY(3px);
-    border-bottom-width: 1px;
-    filter: brightness(0.9);
+    transform: translateY(6px);
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0.3), 0 0 0 rgba(0, 0, 0, 0.2);
+    filter: brightness(0.95);
 }
 
 .btn-blue {
-    background: linear-gradient(to bottom, #42A5F5, #1976D2);
-    border: 1px solid #1565C0;
-    border-bottom-color: #0D47A1;
-    box-shadow: 0 4px 0 #0D47A1;
-}
-
-.btn-blue:active {
-    box-shadow: none;
+    background: linear-gradient(to bottom, #29B6F6, #0288D1);
+    box-shadow: 0 6px 0 #01579B, 0 10px 10px rgba(0, 0, 0, 0.25);
 }
 
 .btn-green {
-    background: linear-gradient(to bottom, #66BB6A, #388E3C);
-    border: 1px solid #2E7D32;
-    border-bottom-color: #1B5E20;
-    box-shadow: 0 4px 0 #1B5E20;
-}
-
-.btn-green:active {
-    box-shadow: none;
+    background: linear-gradient(to bottom, #66BB6A, #2E7D32);
+    box-shadow: 0 6px 0 #1B5E20, 0 10px 10px rgba(0, 0, 0, 0.25);
 }
 
 .btn-red {
-    background: linear-gradient(to bottom, #EF5350, #D32F2F);
-    border: 1px solid #C62828;
-    border-bottom-color: #B71C1C;
-    box-shadow: 0 4px 0 #B71C1C;
-}
-
-.btn-red:active {
-    box-shadow: none;
+    background: linear-gradient(to bottom, #EF5350, #C62828);
+    box-shadow: 0 6px 0 #B71C1C, 0 10px 10px rgba(0, 0, 0, 0.25);
 }
 
 .btn-orange {
-    background: linear-gradient(to bottom, #FFA726, #F57C00);
-    border: 1px solid #EF6C00;
-    border-bottom-color: #E65100;
-    box-shadow: 0 4px 0 #E65100;
-}
-
-.btn-orange:active {
-    box-shadow: none;
+    background: linear-gradient(to bottom, #FFA726, #EF6C00);
+    box-shadow: 0 6px 0 #E65100, 0 10px 10px rgba(0, 0, 0, 0.25);
 }
 
 .btn-purple {
     background: linear-gradient(to bottom, #AB47BC, #7B1FA2);
-    border: 1px solid #6A1B9A;
-    border-bottom-color: #4A148C;
-    box-shadow: 0 4px 0 #4A148C;
-}
-
-.btn-purple:active {
-    box-shadow: none;
+    box-shadow: 0 6px 0 #4A148C, 0 10px 10px rgba(0, 0, 0, 0.25);
 }
 
 .btn-glass-dark {
@@ -725,14 +579,44 @@ footer span {
 }
 
 .brand-footer {
-    margin-top: 5px;
-    font-size: 12px;
-    color: #fff;
-    text-transform: uppercase;
+    margin-top: 15px;
+    font-size: 14px;
+    color: #FFD54F;
     letter-spacing: 2px;
-    font-weight: 900;
-    text-shadow: 0 2px 0px #0056b3, 0 0 10px #00d2ff, 0 0 20px #00d2ff;
-    transform: perspective(500px) rotateX(10deg);
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    opacity: 0.9;
+}
+
+.brand-footer-premium,
+.deejay-logo-pause {
+    text-transform: none !important;
+    font-size: 16px;
+    font-weight: 800;
+    color: #FFD54F;
+    letter-spacing: 1px;
+    margin-top: 10px;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+    font-family: 'League Spartan', sans-serif;
+}
+
+.main-footer {
+    text-transform: none !important;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+    letter-spacing: 1.5px;
+    position: fixed;
+    bottom: 5px;
+    left: 0;
+    right: 0;
+    text-align: center;
+    z-index: 50;
+    pointer-events: none;
+    padding: 10px;
+}
+
+body.in-game .main-footer {
+    display: none !important;
 }
 
 .menu-row {
@@ -1098,6 +982,19 @@ input.initials-input:focus {
     display: block;
 }
 
+.shop-icon-img {
+    width: 64px;
+    height: 64px;
+    margin-bottom: 5px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4));
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.shop-item:hover .shop-icon-img {
+    transform: scale(1.15) rotate(5deg);
+}
+
 .shop-name {
     font-weight: 700;
     font-size: 14px;
@@ -1423,7 +1320,7 @@ input.initials-input:focus {
 /* --- HOME UI DESIGN --- */
 .home-dashboard {
     position: absolute;
-    top: 20px;
+    top: calc(20px + env(safe-area-inset-top));
     width: 100%;
     display: flex;
     justify-content: space-between;
@@ -1451,65 +1348,204 @@ input.initials-input:focus {
     justify-content: flex-start;
     align-items: center;
     padding-top: 15px;
-    /* Reduced from 40px */
     padding-bottom: 30px;
-    /* Reduced from 80px */
     min-height: 100vh;
     box-sizing: border-box;
     overflow-y: auto;
     width: 100%;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 1;
 }
 
 .hero-section {
     text-align: center;
-    margin-bottom: 5px;
-    /* Further reduced from 10px */
-    margin-top: 2%;
+    margin-bottom: 15px;
+    margin-top: 20px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+    min-height: 120px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
 }
 
-.logo-premium {
-    font-size: 52px;
-    /* Slight reduction */
-    font-weight: 1000;
-    letter-spacing: -2px;
-    /* Toy Block Gradient: Red -> Yellow -> Blue */
-    background: linear-gradient(to right, #EF5350 0%, #FFCA28 50%, #42A5F5 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    /* Chunky 3D Shadow */
-    filter: drop-shadow(4px 4px 0 #3E2723) drop-shadow(0 0 10px rgba(255, 202, 40, 0.5));
-    margin-top: 5px;
-    /* Further reduced */
-    margin-bottom: 0px;
-    /* Added to reduce gap */
-    font-family: 'League Spartan', sans-serif;
-    /* Removed animation and rotation for stability */
-    transform: none;
-    text-shadow: 0 4px 0 #3E2723;
-}
-
-@keyframes logoFloat {
-
-    0%,
-    100% {
-        transform: translateY(0) rotate(-2deg);
-    }
-
-    50% {
-        transform: translateY(-8px) rotate(2deg);
-    }
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 350px;
+    height: 160px;
+    background: radial-gradient(ellipse at center, rgba(255, 213, 79, 0.15) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
 }
 
 .action-stack {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    /* Reduced from 10px */
+    width: 100%;
+    max-width: 320px;
+    margin-bottom: 12px;
+    flex-shrink: 0;
+}
+
+.tycoon-bar {
+    display: flex !important;
+    gap: 15px !important;
+    justify-content: center !important;
+    align-items: center !important;
+    background: rgba(10, 10, 30, 0.4) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 40px !important;
+    padding: 8px 20px !important;
+    margin-top: 10px !important;
+    margin-bottom: 20px !important;
+    box-shadow: 0 15px 45px rgba(0, 0, 0, 0.5) !important;
+    z-index: 1000 !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    flex-shrink: 0;
+}
+
+.brand-footer-premium {
+    font-size: 14px;
+    font-weight: 900;
+    opacity: 1;
+    letter-spacing: 1px;
+    text-align: center;
+    width: 100%;
+    margin-bottom: 15px;
+    margin-top: 15px;
+    background: linear-gradient(to right, #EF5350 0%, #FFCA28 50%, #42A5F5 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    flex-shrink: 0;
+}
+
+.logo-premium {
+    font-size: 56px;
+    font-weight: 1000;
+    letter-spacing: -2px;
+    background: linear-gradient(180deg, #FFD54F 0%, #FFB300 30%, #FF6F00 70%, #FF3D00 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 3px 0 #3E2723) drop-shadow(0 6px 0 #3E2723) drop-shadow(0 0 25px rgba(255, 213, 79, 0.5));
+    margin: 0;
+    padding: 5px 0;
+    font-family: 'League Spartan', sans-serif;
+    transform: perspective(800px) rotateX(6deg);
+    animation: logoEntrance 1.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards, logoGlow 3s ease-in-out infinite 1.2s;
+    position: relative;
+    text-transform: uppercase;
+    line-height: 1;
+    white-space: nowrap;
+}
+
+.logo-premium::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 280px;
+    height: 80px;
+    background: radial-gradient(ellipse at center, rgba(255, 213, 79, 0.2) 0%, transparent 70%);
+    z-index: -1;
+    animation: logoGlowBg 3s ease-in-out infinite;
+}
+
+.logo-premium::after {
+    content: 'BLOCK RISER';
+    position: absolute;
+    left: 0;
+    top: 0;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.4) 0%, transparent 50%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: blur(0.5px);
+    transform: translateY(1px);
+    z-index: 1;
+}
+
+@keyframes logoEntrance {
+    0% {
+        opacity: 0;
+        transform: perspective(800px) rotateX(15deg) scale(0.8) translateY(30px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: perspective(800px) rotateX(6deg) scale(1) translateY(0);
+    }
+}
+
+@keyframes logoGlow {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 3px 0 #3E2723) drop-shadow(0 6px 0 #3E2723) drop-shadow(0 0 25px rgba(255, 213, 79, 0.5));
+    }
+
+    50% {
+        filter: drop-shadow(0 3px 0 #3E2723) drop-shadow(0 6px 0 #3E2723) drop-shadow(0 0 40px rgba(255, 213, 79, 0.7));
+    }
+}
+
+@keyframes logoGlowBg {
+
+    0%,
+    100% {
+        opacity: 0.5;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+@keyframes logoFloat {
+
+    0%,
+    100% {
+        transform: perspective(800px) rotateX(6deg) translateY(0);
+    }
+
+    50% {
+        transform: perspective(800px) rotateX(6deg) translateY(-3px);
+    }
+}
+
+.subtitle {
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 6px;
+    text-transform: uppercase;
+    margin: 0 0 20px 0;
+    padding-left: 6px;
+    display: block;
+    clear: both;
+}
+
+.action-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     width: 100%;
     max-width: 320px;
     margin-bottom: 15px;
-    /* Reduced from 20px */
+    flex-shrink: 0;
 }
 
 .icon-btn-glass {
@@ -1535,16 +1571,36 @@ input.initials-input:focus {
 /* Responsive Overrides */
 @media (max-width: 600px) {
     .logo-premium {
-        font-size: 42px;
-        /* Smaller for mobile */
+        font-size: 28px;
+        /* Much smaller to prevent overlap */
+        letter-spacing: -0.5px;
+        margin-bottom: 2px;
+    }
+
+    .subtitle {
+        font-size: 10px;
+        letter-spacing: 2px;
+        margin-bottom: 5px;
+        /* Tighten up */
+    }
+
+    .hero-section {
+        min-height: auto;
+        /* Remove fixed height constraint */
+        padding-bottom: 5px;
+        margin-top: 2px;
+        /* Push to top */
     }
 
     .btn-label {
-        font-size: 15px;
+        font-size: 14px;
     }
 
     .action-stack {
         max-width: 290px;
+        gap: 15px;
+        /* Better spacing on mobile */
+        margin-bottom: 15px;
     }
 
     .home-dashboard {
@@ -1553,29 +1609,36 @@ input.initials-input:focus {
     }
 
     .icon-btn-glass {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         font-size: 16px;
     }
 
     .home-content {
-        padding-top: 20px !important;
+        padding-top: 15px !important;
     }
 }
 
-@media (max-height: 750px) {
+@media (max-height: 700px) {
     .hero-section {
-        margin-top: 2%;
+        margin-top: 15px;
         margin-bottom: 10px;
+        min-height: 80px;
     }
 
     .logo-premium {
         font-size: 36px;
+        padding: 3px 0;
+    }
+
+    .subtitle {
+        font-size: 10px;
+        letter-spacing: 3px;
+        margin-bottom: 12px;
     }
 
     .btn-premium {
-        padding: 10px !important;
-        /* Tighter buttons */
+        padding: 10px 15px !important;
     }
 
     .home-content {
@@ -1606,30 +1669,10 @@ body.in-game .main-footer {
     background-image: linear-gradient(to bottom, #5D4037, #3E2723) !important;
     border: 3px solid #8D6E63 !important;
     border-radius: 20px !important;
-    padding: 15px 20px !important;
-    /* Reduced from 30px */
+    padding: 25px 30px !important;
+    min-width: 280px !important;
+    max-width: 90vw !important;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6) !important;
-}
-
-/* Base button style reset */
-.btn-premium {
-    width: 100%;
-    padding: 18px;
-    border-radius: 14px;
-    border: none !important;
-    color: white !important;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    display: flex;
-    justify-content: center;
-    /* Center text */
-    align-items: center;
-    text-align: center;
-    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3) !important;
-    margin-bottom: 8px;
-    /* Reduced from 15px */
-    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
 }
 
 /* Mode Selection Cards */
@@ -1638,6 +1681,50 @@ body.in-game .main-footer {
     flex-direction: column;
     width: 100%;
     align-items: center;
+    gap: 20px;
+    /* Increased base gap */
+}
+
+@media (max-height: 740px) {
+    .menu-stack {
+        gap: 12px !important;
+    }
+
+    .action-stack {
+        gap: 8px !important;
+        margin-bottom: 5px !important;
+    }
+
+    .btn-premium {
+        padding: 8px !important;
+        margin-bottom: 5px !important;
+        margin-top: 2px !important;
+    }
+
+    .btn-label {
+        font-size: 14px !important;
+    }
+
+    .logo-premium {
+        font-size: 32px !important;
+        margin-bottom: 5px !important;
+    }
+
+    .hero-section {
+        min-height: 60px !important;
+        margin-top: 5px !important;
+    }
+
+    .tycoon-bar {
+        margin-top: 10px !important;
+        margin-bottom: 10px !important;
+        padding: 5px 15px !important;
+    }
+
+    .tycoon-btn {
+        width: 55px !important;
+        height: 55px !important;
+    }
 }
 
 .mode-card {
@@ -1679,40 +1766,29 @@ body.in-game .main-footer {
     margin-top: 2px;
 }
 
-.overlay .btn-label {
-    font-size: 16px !important;
-    font-weight: 900 !important;
-    text-align: left;
-    margin: 0;
+/* Base button style reset */
+.btn-premium {
+    width: 100%;
+    padding: 18px;
+    border-radius: 14px;
+    border: none !important;
+    color: white !important;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    display: flex;
+    justify-content: center;
+    /* Center text */
+    align-items: center;
+    text-align: center;
+    box-shadow: 0 6px 0 rgba(0, 0, 0, 0.3) !important;
+    margin-bottom: 15px;
+    margin-top: 5px;
+    /* Added safety gap */
+    /* Increased separation */
+    text-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
 }
 
-/* Consolidate Button Colors (Wood Edition Palette) */
-.btn-play {
-    background: linear-gradient(to bottom, #43A047, #2E7D32) !important;
-    border-bottom: 4px solid #1B5E20 !important;
-}
-
-.btn-adventure {
-    background: linear-gradient(to bottom, #1976D2, #1565C0) !important;
-    border-bottom: 4px solid #0D47A1 !important;
-}
-
-.btn-red {
-    background: linear-gradient(to bottom, #D32F2F, #C62828) !important;
-    border-bottom: 4px solid #B71C1C !important;
-}
-
-.btn-resume {
-    background: linear-gradient(to bottom, #FB8C00, #F57C00) !important;
-    border-bottom: 4px solid #E65100 !important;
-}
-
-.btn-tutorial {
-    background: linear-gradient(to bottom, #7B1FA2, #6A1B9A) !important;
-    border-bottom: 4px solid #4A148C !important;
-}
-
-/* Overlay Premium Button Sizing */
 .overlay .btn-premium {
     width: 85%;
     max-width: 320px;
@@ -1720,7 +1796,8 @@ body.in-game .main-footer {
     border-radius: 12px !important;
     border: 2px solid rgba(255, 255, 255, 0.2) !important;
     border-bottom-width: 4px !important;
-    margin-bottom: 12px;
+    margin-bottom: 15px;
+    /* Consistent spacing */
     margin-left: auto;
     margin-right: auto;
     display: flex;
@@ -1847,12 +1924,9 @@ body.in-game .main-footer {
     background: rgba(255, 255, 255, 0.1) !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     border-radius: 15px !important;
-    padding: 8px 10px !important;
-    /* Reduced padding */
-    width: 65px;
-    /* Reduced from 80px */
-    height: 65px;
-    /* Square shape */
+    padding: 10px 12px !important;
+    width: 80px !important;
+    height: 80px !important;
     transition: all 0.2s !important;
 }
 
@@ -1862,16 +1936,31 @@ body.in-game .main-footer {
 }
 
 .t-icon {
-    font-size: 20px !important;
+    font-size: 28px !important;
     margin-bottom: 5px;
     filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.3));
 }
 
 .t-label {
-    font-size: 9px !important;
+    font-size: 11px !important;
     font-weight: 800 !important;
     letter-spacing: 0.5px;
     color: rgba(255, 255, 255, 0.8);
+}
+
+/* Reduce TOY BOX button size to fit frame */
+.tycoon-btn.hq-active {
+    width: 80px !important;
+    height: 80px !important;
+    padding: 10px 12px !important;
+}
+
+.tycoon-btn.hq-active .t-icon {
+    font-size: 28px !important;
+}
+
+.tycoon-btn.hq-active .t-label {
+    font-size: 11px !important;
 }
 
 .overlay .btn-purple {
@@ -1879,6 +1968,66 @@ body.in-game .main-footer {
 }
 
 /* Enhanced Shop & Items (Wood Style) */
+
+/* DAILY REWARDS STYLES */
+.daily-grid {
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    width: 100%;
+    margin: 15px 0;
+    padding: 10px;
+}
+
+.daily-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 10px 5px;
+    position: relative;
+    opacity: 0.8;
+}
+
+.daily-day.active {
+    background: linear-gradient(135deg, #4caf50, #2e7d32);
+    border: 2px solid #a5d6a7;
+    box-shadow: 0 0 15px rgba(76, 175, 80, 0.4);
+    transform: scale(1.05);
+    opacity: 1;
+    z-index: 2;
+}
+
+.daily-day.claimed {
+    background: rgba(76, 175, 80, 0.2);
+    border-color: #4caf50;
+    opacity: 0.5;
+}
+
+.daily-day .day-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+
+.daily-day .day-icon {
+    font-size: 24px;
+    margin-bottom: 5px;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.daily-day .day-reward {
+    font-size: 11px;
+    font-weight: 800;
+    color: #FFD54F;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border-radius: 8px;
+}
+
 .shop-item,
 .level-node,
 .stat-box {
@@ -1922,21 +2071,72 @@ body.in-game .main-footer {
 }
 
 .powerup-bar {
-    background: #4E342E !important;
-    border: 2px solid #8D6E63 !important;
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 400px;
+    z-index: 200 !important;
+    display: flex;
+    justify-content: space-around;
+    padding: 10px;
+
+    background: rgba(62, 39, 35, 0.95) !important;
+    border: 2px solid rgba(255, 255, 255, 0.2) !important;
     border-radius: 20px !important;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.5), 0 0 10px rgba(255, 213, 79, 0.2) !important;
+    backdrop-filter: blur(10px) !important;
+    -webkit-backdrop-filter: blur(10px) !important;
+}
+
+.boss-bar {
+    position: absolute;
+    top: 60px;
+    /* Below Header */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 90%;
+    max-width: 500px;
+    z-index: 150;
+
+    background: rgba(62, 39, 35, 0.9);
+    border: 2px solid #D32F2F;
+    border-radius: 12px;
+    padding: 8px 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+    transition: opacity 0.3s;
+}
+
+.shop-icon-img-small {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.5));
 }
 
 .powerup-btn {
-    background: linear-gradient(to bottom, #5D4037, #3E2723) !important;
+    background: linear-gradient(145deg, #5D4037, #3E2723) !important;
     border: 2px solid #8D6E63 !important;
-    box-shadow: 0 3px 0 rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    min-width: 52px !important;
+    height: 52px !important;
+    flex-shrink: 0 !important;
 }
 
 .powerup-btn:hover {
     transform: translateY(-2px) !important;
-    border-color: #FFB74D !important;
+    border-color: #FFD54F !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 213, 79, 0.3) !important;
+}
+
+.powerup-btn.active {
+    border-color: #FFD54F !important;
+    background: linear-gradient(145deg, #6D4C41, #4E342E) !important;
+    box-shadow: 0 0 15px rgba(255, 213, 79, 0.5), 0 3px 6px rgba(0, 0, 0, 0.3) !important;
 }
 
 .hud-group {
@@ -2031,6 +2231,7 @@ body.in-game .main-footer {
 }
 
 /* 2. Overlay Container Integrity */
+/* 2. Overlay Container Integrity */
 .overlay-content {
     max-height: 85vh;
     /* Never exceed 85% of screen height */
@@ -2082,6 +2283,7 @@ body.in-game .main-footer {
 header#game-header {
     z-index: 6000 !important;
     display: flex !important;
+    flex-shrink: 0;
     /* Force layout if visible */
 }
 
@@ -2091,4 +2293,1258 @@ header#game-header {
 
 #game-container {
     z-index: 100;
+    width: 100%;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+
+/* --- MOBILE SPECIFIC FIXES --- */
+@media (max-height: 740px) {
+    .powerup-bar {
+        bottom: 10px;
+        padding: 5px;
+        border-radius: 12px !important;
+    }
+
+    .powerup-btn {
+        min-width: 40px !important;
+        height: 40px !important;
+    }
+
+    .powerup-icon {
+        font-size: 16px;
+    }
+
+    .powerup-count {
+        font-size: 8px;
+    }
+
+    .shop-icon-img-small {
+        width: 18px;
+        height: 18px;
+    }
+}
+
+/* 3. Sticky Bottom Buttons (Optional but good) */
+.overlay-content>button:last-child {
+    margin-top: 10px !important;
+    flex-shrink: 0;
+    width: 100%;
+}
+
+/* 4. Scrollbar Styling for these new containers */
+#theme-grid::-webkit-scrollbar,
+#adventure-list::-webkit-scrollbar,
+.overlay-content::-webkit-scrollbar {
+    width: 5px;
+}
+
+#theme-grid::-webkit-scrollbar-thumb,
+#adventure-list::-webkit-scrollbar-thumb,
+.overlay-content::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+/* 5. Fix grid defaults */
+.grid-select {
+    grid-template-columns: 1fr 1fr;
+    /* Force 2 columns for themes */
+}
+
+/* Ensure 3D Scene is visible behind the menu */
+.bg-3d-scene {
+    z-index: 0;
+}
+
+.home-content {
+    z-index: 10;
+}
+
+/* Ensure HUD is on top */
+/* Ensure HUD is on top */
+header#game-header {
+    z-index: 6000 !important;
+    display: flex !important;
+    flex-shrink: 0;
+    /* Force layout if visible */
+}
+
+#game-header.hidden {
+    display: none !important;
+}
+
+#game-container {
+    z-index: 100;
+    width: 100%;
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gameCanvas {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* FORCE BUTTON COLORS */
+.btn-premium.btn-play {
+    background: linear-gradient(to bottom, #43A047, #2E7D32) !important;
+    border-bottom: 4px solid #1B5E20 !important;
+}
+
+.btn-premium.btn-resume {
+    background: linear-gradient(to bottom, #FB8C00, #F57C00) !important;
+    border-bottom: 4px solid #E65100 !important;
+}
+
+.btn-premium.btn-tutorial {
+    background: linear-gradient(to bottom, #7B1FA2, #6A1B9A) !important;
+    border-bottom: 4px solid #4A148C !important;
+}
+
+/* ========================================
+   MOBILE OPTIMIZATION - FINAL POLISH
+   Target: 9.9/10 Play Store Rating
+   ======================================== */
+@media (max-height: 740px) {
+
+    /* ===== HOME SCREEN ===== */
+    .hero-section {
+        min-height: auto !important;
+        margin-top: 50px !important;
+        margin-bottom: 8px !important;
+        padding-bottom: 0 !important;
+    }
+
+    .logo-premium {
+        font-size: 38px !important;
+        margin-bottom: 3px !important;
+        line-height: 1.1 !important;
+    }
+
+    .subtitle {
+        font-size: 10px !important;
+        margin-bottom: 8px !important;
+        display: block !important;
+        opacity: 0.8;
+    }
+
+    /* Main Menu Buttons */
+    .menu-stack {
+        gap: 10px !important;
+    }
+
+    .action-stack {
+        gap: 10px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .btn-premium {
+        padding: 12px 16px !important;
+        margin-bottom: 6px !important;
+        margin-top: 0 !important;
+        min-height: 52px !important;
+    }
+
+    .btn-label {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+    }
+
+    /* ===== OVERLAYS - UNIVERSAL FIX ===== */
+    .overlay {
+        padding: 15px 10px !important;
+    }
+
+    .overlay-content {
+        max-height: 92vh !important;
+        overflow-y: auto !important;
+        padding: 20px 15px !important;
+        width: 95% !important;
+        max-width: 420px !important;
+    }
+
+    .overlay .title-large {
+        font-size: 32px !important;
+        margin-bottom: 12px !important;
+    }
+
+    .overlay .subtitle {
+        font-size: 11px !important;
+        margin-bottom: 15px !important;
+        display: block !important;
+    }
+
+    .overlay .btn-premium {
+        min-height: 56px !important;
+        padding: 14px 16px !important;
+        margin-bottom: 10px !important;
+    }
+
+    .overlay .btn-label {
+        font-size: 15px !important;
+        font-weight: 800 !important;
+    }
+
+    .overlay .btn-secondary {
+        min-height: 48px !important;
+        font-size: 14px !important;
+        padding: 12px !important;
+    }
+
+    /* ===== MODE SELECT OVERLAY ===== */
+    .mode-card {
+        padding: 14px 16px !important;
+        min-height: 70px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .mode-icon-wrap {
+        width: 48px !important;
+        height: 48px !important;
+        font-size: 24px !important;
+    }
+
+    .mode-info .btn-label {
+        font-size: 16px !important;
+        margin-bottom: 2px !important;
+    }
+
+    .btn-subtext {
+        font-size: 10px !important;
+    }
+
+    /* ===== SETTINGS OVERLAY ===== */
+    #settings-overlay .overlay-content {
+        width: 85% !important;
+        max-width: 320px !important;
+        padding: 25px 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+    }
+
+    .settings-row {
+        width: 100% !important;
+        padding: 12px 0 !important;
+    }
+
+    .settings-row span {
+        font-size: 14px !important;
+        font-weight: 800 !important;
+    }
+
+    #btn-reset-data {
+        width: 100% !important;
+        margin-top: 15px !important;
+        font-size: 11px !important;
+        padding: 12px !important;
+    }
+
+    /* ===== PAUSE MENU ===== */
+
+    /* ===== PAUSE MENU ===== */
+    #pause-overlay .overlay-content {
+        padding: 30px 20px !important;
+    }
+
+    #btn-pause-resume .btn-label,
+    #btn-resume .btn-label {
+        font-size: 14px !important;
+        letter-spacing: 0px !important;
+    }
+
+    .pause-brand {
+        margin-top: 40px !important;
+    }
+
+    .deejay-logo-pause {
+        font-size: 20px !important;
+    }
+
+    /* ===== THEMES OVERLAY ===== */
+    .grid-select {
+        gap: 12px !important;
+        padding: 10px 0 !important;
+    }
+
+    .theme-box {
+        width: 100% !important;
+        max-width: 160px !important;
+        padding: 12px !important;
+        min-height: 140px !important;
+    }
+
+    .theme-preview {
+        width: 60px !important;
+        height: 60px !important;
+        margin-bottom: 8px !important;
+    }
+
+    .theme-name {
+        font-size: 13px !important;
+        margin-bottom: 3px !important;
+    }
+
+    .theme-unlock {
+        font-size: 9px !important;
+    }
+
+    /* ===== SHOP & GRIDS ===== */
+    .shop-grid {
+        gap: 10px !important;
+        grid-template-columns: repeat(2, 1fr) !important;
+    }
+
+    .shop-item {
+        padding: 12px !important;
+        min-height: 140px !important;
+    }
+
+    .shop-icon-img {
+        width: 48px !important;
+        height: 48px !important;
+    }
+
+    .shop-name {
+        font-size: 13px !important;
+    }
+
+    .shop-desc {
+        font-size: 10px !important;
+    }
+
+    .shop-price {
+        font-size: 13px !important;
+    }
+
+    /* ===== DAILY REWARDS ===== */
+    .daily-grid {
+        gap: 8px !important;
+        padding: 12px 8px !important;
+    }
+
+    .daily-day {
+        padding: 10px 6px !important;
+    }
+
+    .day-label {
+        font-size: 9px !important;
+    }
+
+    .day-reward {
+        font-size: 11px !important;
+    }
+
+    /* ===== PREMIUM DOCK ===== */
+    .tycoon-bar {
+        width: 96% !important;
+        max-width: 420px !important;
+        height: 72px !important;
+        background: rgba(45, 25, 20, 0.98) !important;
+        border: 2px solid rgba(255, 215, 0, 0.5) !important;
+        border-radius: 36px !important;
+        padding: 0 12px !important;
+        margin: 8px auto 12px auto !important;
+
+        display: flex !important;
+        justify-content: space-evenly !important;
+        align-items: center !important;
+        gap: 0 !important;
+        box-shadow: 0 6px 24px rgba(0, 0, 0, 0.8) !important;
+    }
+
+    .tycoon-btn {
+        width: 58px !important;
+        height: 58px !important;
+        background: transparent !important;
+        border: none !important;
+        flex-shrink: 0 !important;
+        padding: 0 !important;
+        border-radius: 14px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .tycoon-btn .t-icon {
+        font-size: 28px !important;
+        margin-bottom: 2px !important;
+        filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.9));
+    }
+
+    .tycoon-btn .t-label {
+        font-size: 9px !important;
+        color: #FFD54F !important;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+    }
+
+    /* Central FAB */
+    .tycoon-btn.hq-active {
+        width: 84px !important;
+        height: 84px !important;
+        margin-top: -48px !important;
+
+        background: radial-gradient(circle at 35% 35%, #6D4C41, #3E2723) !important;
+        border: 4px solid #FFD54F !important;
+        border-radius: 50% !important;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(255, 215, 0, 0.2) !important;
+        z-index: 25 !important;
+
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        padding: 0 !important;
+    }
+
+    .tycoon-btn.hq-active .t-icon {
+        font-size: 28px !important;
+        /* Further reduced to fit properly */
+        margin-bottom: 0 !important;
+        line-height: 1 !important;
+    }
+
+    .tycoon-btn.hq-active .t-label {
+        display: block !important;
+        font-size: 7px !important;
+        margin-top: 2px !important;
+        line-height: 1 !important;
+    }
+
+    /* ===== GAMEPLAY SCREEN PREMIUM POLISH ===== */
+
+    /* Enhanced HUD */
+    #game-header {
+        background: linear-gradient(180deg, rgba(45, 25, 20, 0.95) 0%, rgba(45, 25, 20, 0.85) 100%) !important;
+        backdrop-filter: blur(10px) !important;
+        border-bottom: 2px solid rgba(255, 215, 0, 0.3) !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5) !important;
+        padding: 8px 10px !important;
+    }
+
+    .hud-group {
+        background: rgba(0, 0, 0, 0.4) !important;
+        border: 2px solid rgba(255, 215, 0, 0.4) !important;
+        border-radius: 12px !important;
+        padding: 6px 12px !important;
+        min-width: 75px !important;
+        box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    .hud-label {
+        font-size: 9px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.5px !important;
+        color: rgba(255, 215, 0, 0.9) !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .hud-value {
+        font-size: 16px !important;
+        font-weight: 900 !important;
+        color: #FFD54F !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), 0 0 10px rgba(255, 215, 0, 0.3) !important;
+    }
+
+    /* Premium Powerup Bar */
+    .powerup-bar {
+        background: linear-gradient(180deg, rgba(45, 25, 20, 0.98) 0%, rgba(30, 20, 15, 0.98) 100%) !important;
+        border: 2px solid rgba(255, 215, 0, 0.5) !important;
+        border-radius: 20px !important;
+        padding: 8px 12px !important;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 215, 0, 0.2) !important;
+        backdrop-filter: blur(10px) !important;
+    }
+
+    .powerup-btn {
+        width: 52px !important;
+        height: 52px !important;
+        background: linear-gradient(135deg, rgba(80, 50, 30, 0.9) 0%, rgba(50, 30, 20, 0.9) 100%) !important;
+        border: 2px solid rgba(255, 215, 0, 0.4) !important;
+        border-radius: 14px !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+        transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+        position: relative !important;
+        overflow: visible !important;
+    }
+
+    .powerup-btn:hover {
+        transform: translateY(-3px) scale(1.05) !important;
+        border-color: rgba(255, 215, 0, 0.8) !important;
+        box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+
+    .powerup-btn:active {
+        transform: translateY(-1px) scale(0.98) !important;
+    }
+
+    .powerup-icon {
+        font-size: 26px !important;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)) !important;
+    }
+
+    .powerup-count {
+        position: absolute !important;
+        bottom: 2px !important;
+        right: 2px !important;
+        background: linear-gradient(135deg, #FFD54F 0%, #FFA726 100%) !important;
+        color: #3E2723 !important;
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        padding: 2px 6px !important;
+        border-radius: 8px !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+        min-width: 20px !important;
+        text-align: center !important;
+    }
+
+    /* Premium Pause Button */
+    #pause-btn {
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.95) 0%, rgba(101, 67, 33, 0.95) 100%) !important;
+        border: 2px solid rgba(255, 215, 0, 0.6) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+    }
+
+    #pause-btn:hover {
+        background: linear-gradient(135deg, rgba(160, 82, 45, 0.95) 0%, rgba(139, 69, 19, 0.95) 100%) !important;
+        border-color: rgba(255, 215, 0, 0.9) !important;
+        box-shadow: 0 6px 16px rgba(255, 215, 0, 0.3) !important;
+    }
+
+    .separator-vertical {
+        width: 2px !important;
+        height: 40px !important;
+        background: linear-gradient(180deg, transparent 0%, rgba(255, 215, 0, 0.3) 50%, transparent 100%) !important;
+        margin: 0 4px !important;
+    }
+
+    /* Game Canvas Enhancement */
+    #game-container {
+        background: radial-gradient(circle at center, rgba(45, 25, 20, 0.3) 0%, rgba(30, 20, 15, 0.5) 100%) !important;
+    }
+
+    /* Boss Bar Premium */
+    .boss-bar {
+        background: linear-gradient(135deg, rgba(139, 0, 0, 0.95) 0%, rgba(75, 0, 0, 0.95) 100%) !important;
+        border: 2px solid rgba(255, 0, 0, 0.5) !important;
+        border-radius: 16px !important;
+        padding: 10px 16px !important;
+        box-shadow: 0 4px 20px rgba(255, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+    }
+
+    .boss-health-fill {
+        background: linear-gradient(90deg, #ff0000 0%, #ff6b6b 50%, #ff0000 100%) !important;
+        box-shadow: 0 0 20px rgba(255, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3) !important;
+        border-radius: 8px !important;
+    }
+
+    /* ===== FOOTER ===== */
+    .brand-footer-premium {
+        font-size: 12px !important;
+        margin-top: 2px !important;
+        padding-bottom: 3px !important;
+        opacity: 0.75 !important;
+        font-weight: 700;
+    }
+
+    /* ===== STATS & ACHIEVEMENTS ===== */
+    .stats-container {
+        gap: 10px !important;
+    }
+
+    .stat-box {
+        padding: 12px !important;
+        min-height: 80px !important;
+    }
+
+    .achievements-list {
+        min-height: 200px !important;
+        overflow: visible !important;
+    }
+
+    #upgrades-list,
+    .achievements-list {
+        max-height: none !important;
+        overflow: visible !important;
+        height: auto !important;
+    }
+
+    /* Stats Container & Overlay Polishing */
+    #stats-overlay .overlay-content {
+        max-height: 85vh !important;
+        overflow-y: auto !important;
+        padding: 24px 20px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 15px !important;
+    }
+
+    /* Scrollbar for the Stats Panel */
+    #stats-overlay .overlay-content::-webkit-scrollbar {
+        width: 6px !important;
+    }
+
+    #stats-overlay .overlay-content::-webkit-scrollbar-thumb {
+        background: var(--gold-color) !important;
+        border-radius: 3px !important;
+    }
+
+    /* Stats Container Grid */
+    .stats-container {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px !important;
+        margin: 10px 0 !important;
+    }
+
+    /* Individual Stat Boxes - Compact Toy Blocks */
+    .stat-box {
+        background: linear-gradient(135deg, rgba(139, 69, 19, 0.6) 0%, rgba(101, 67, 33, 0.6) 100%) !important;
+        border: 2px solid rgba(255, 215, 0, 0.4) !important;
+        border-radius: 12px !important;
+        padding: 8px 4px !important;
+        text-align: center !important;
+        position: relative !important;
+        overflow: hidden !important;
+        box-shadow:
+            0 4px 10px rgba(0, 0, 0, 0.4),
+            inset 0 1px 0 rgba(255, 215, 0, 0.1) !important;
+        transition: all 0.2s ease !important;
+        min-height: 60px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .stat-box:hover {
+        transform: translateY(-2px) !important;
+        border-color: rgba(255, 215, 0, 0.8) !important;
+    }
+
+    .stat-box .stat-label {
+        font-size: 8px !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.5px !important;
+        text-transform: uppercase !important;
+        color: rgba(255, 215, 0, 0.8) !important;
+        margin-top: 2px !important;
+        order: 2 !important;
+    }
+
+    .stat-box .stat-value {
+        font-size: 14px !important;
+        font-weight: 900 !important;
+        color: #FFD54F !important;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+        line-height: 1.1 !important;
+        order: 1 !important;
+    }
+
+    /* Section Dividers */
+    .section-divider {
+        width: 100% !important;
+        height: 1px !important;
+        background: linear-gradient(90deg, transparent, var(--gold-color), transparent) !important;
+        margin: 20px 0 15px !important;
+        position: relative !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+    }
+
+    .divider-text {
+        position: absolute !important;
+        background: #3E2723 !important;
+        padding: 0 15px !important;
+        font-size: 10px !important;
+        font-weight: 900 !important;
+        color: var(--gold-color) !important;
+        text-transform: uppercase !important;
+        letter-spacing: 2px !important;
+        top: -7px !important;
+    }
+
+    /* Upgrade Cards - Premium Toy Style */
+    #upgrades-list {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+        padding-bottom: 20px !important;
+    }
+
+    .upgrade-card {
+        background: linear-gradient(135deg, rgba(80, 50, 30, 0.8) 0%, rgba(50, 30, 20, 0.8) 100%) !important;
+        border: 2px solid rgba(255, 215, 0, 0.3) !important;
+        border-radius: 12px !important;
+        padding: 10px 12px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 15px !important;
+        position: relative !important;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    .upgrade-info-wrap {
+        flex: 1 !important;
+        text-align: left !important;
+    }
+
+    /* Background Icon Decorations */
+    .upgrade-card {
+        background-size: cover !important;
+        background-position: center !important;
+        background-repeat: no-repeat !important;
+    }
+
+    /* Magnet Upgrade Background */
+    .upgrade-card[data-upgrade="magnet"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url('bg_magnet.png') !important;
+        background-size: cover !important;
+        border-color: rgba(0, 210, 255, 0.4) !important;
+    }
+
+    /* Insurance Upgrade Background */
+    .upgrade-card[data-upgrade="insurance"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.7)), url('bg_insurance.png') !important;
+        background-size: cover !important;
+        border-color: rgba(255, 165, 0, 0.4) !important;
+    }
+
+    /* Architect Eye Upgrade Background */
+    .upgrade-card[data-upgrade="eye"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.8)), url('/bg_master.svg') !important;
+        background-size: cover !important;
+        background-position: center !important;
+        border-color: rgba(0, 191, 255, 0.5) !important;
+    }
+
+    /* Combo King Upgrade Background - High Score Hero */
+    .upgrade-card[data-upgrade="combo"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.9)), url('/bg_hero.svg') !important;
+        background-size: cover !important;
+        background-position: center !important;
+        border-color: #FFD700 !important;
+    }
+
+    /* Frenzy Master Upgrade Background - Robot Factory */
+    .upgrade-card[data-upgrade="frenzy"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.9)), url('/bg_robot.svg') !important;
+        background-size: cover !important;
+        background-position: center !important;
+        border-color: #00E676 !important;
+    }
+
+    .upgrade-card:hover {
+        transform: translateY(-2px) !important;
+        border-color: rgba(255, 215, 0, 0.9) !important;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* Ensure text legibility over images */
+    .upgrade-name,
+    .upgrade-desc,
+    .upgrade-level {
+        position: relative !important;
+        z-index: 2 !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    .upgrade-card::after {
+        display: none !important;
+        /* Hide old emoji watermarks */
+    }
+
+    .upgrade-card .upgrade-name {
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        color: #FFD54F !important;
+        margin-bottom: 2px !important;
+    }
+
+    .upgrade-card .upgrade-desc {
+        font-size: 10px !important;
+        color: rgba(255, 255, 255, 0.6) !important;
+        line-height: 1.2 !important;
+        margin-bottom: 0 !important;
+    }
+
+    .upgrade-card .upgrade-level {
+        position: absolute !important;
+        top: -8px !important;
+        right: 10px !important;
+        background: #3E2723 !important;
+        padding: 2px 8px !important;
+        border-radius: 10px !important;
+        border: 1px solid var(--gold-color) !important;
+        font-size: 9px !important;
+        font-weight: 900 !important;
+        color: white !important;
+    }
+
+    .upgrade-card .upgrade-btn-wrap {
+        min-width: 80px !important;
+    }
+
+    .upgrade-card .upgrade-cost {
+        background: linear-gradient(135deg, #FFD54F 0%, #FFA726 100%) !important;
+        color: #3E2723 !important;
+        font-size: 13px !important;
+        font-weight: 900 !important;
+        padding: 6px 12px !important;
+        border-radius: 10px !important;
+        border: 2px solid rgba(255, 255, 255, 0.3) !important;
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3) !important;
+        display: inline-block !important;
+        text-align: center !important;
+    }
+
+    /* Achievements List - Toy Badges */
+    .achievements-list {
+        max-height: 300px !important;
+        overflow-y: auto !important;
+        padding: 8px !important;
+    }
+
+    /* Ensure Theme Grid Layout */
+    #theme-grid {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 12px !important;
+        width: 100% !important;
+        margin-top: 15px !important;
+        padding-bottom: 20px !important;
+    }
+
+    /* Theme Selection Box (Toy Edition) */
+    .theme-box {
+        background: linear-gradient(135deg, rgba(80, 50, 30, 0.6) 0%, rgba(50, 30, 20, 0.6) 100%) !important;
+        border: 2px solid rgba(255, 215, 0, 0.3) !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        position: relative !important;
+        overflow: hidden !important;
+        transition: all 0.2s !important;
+        min-height: 140px !important;
+        cursor: pointer !important;
+        background-size: cover !important;
+        background-position: center !important;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9) !important;
+    }
+
+    /* THEME BACKGROUNDS */
+
+    /* Oak (Classic) */
+    .theme-box[data-theme="classic"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6)), url('theme_oak.png') !important;
+        background-size: cover !important;
+        border-color: #D7CCC8 !important;
+    }
+
+    /* Pine (Pixel) */
+    .theme-box[data-theme="pixel"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.5)), url('theme_pine.png') !important;
+        background-size: cover !important;
+        border-color: #FFF59D !important;
+        color: #3E2723 !important;
+        text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5) !important;
+    }
+
+    .theme-box[data-theme="pixel"] .theme-name {
+        color: #3E2723 !important;
+        text-shadow: none !important;
+        font-weight: 900 !important;
+    }
+
+    /* Mahogany (Neon) */
+    .theme-box[data-theme="neon"] {
+        background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.6)), url('theme_mahogany.png') !important;
+        background-size: cover !important;
+        border-color: #FF7043 !important;
+    }
+
+    /* Ebony (Midnight) - Deep Dark Wood Texture */
+    .theme-box[data-theme="midnight"] {
+        background-color: #1a1a1a !important;
+        background-image:
+            linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.8)),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.5' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.05'/%3E%3C/svg%3E"),
+            repeating-linear-gradient(90deg, #111 0px, #1a1a1a 2px, #111 4px) !important;
+        background-size: cover, 100px 100px, 100% 100% !important;
+        border-color: #616161 !important;
+        box-shadow: inset 0 0 30px #000 !important;
+    }
+
+    /* Walnut (Obsidian) - Realistic Burl Wood */
+    .theme-box[data-theme="obsidian"] {
+        background-color: #3E2723 !important;
+        background-image:
+            radial-gradient(circle at 30% 30%, rgba(0, 0, 0, 0.4), transparent 60%),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='wood'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.005 0.05' numOctaves='3' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%233E2723' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23wood)' opacity='0.6'/%3E%3C/svg%3E") !important;
+        border-color: #8D6E63 !important;
+        background-size: cover, 300px 300px !important;
+    }
+
+    /* Cherry (Eclipse) - Red Wood Grain */
+    .theme-box[data-theme="eclipse"] {
+        background-color: #4a1212 !important;
+        background-image:
+            linear-gradient(135deg, rgba(74, 18, 18, 0.9), rgba(43, 5, 5, 0.9)),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='grain'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.01 0.1' numOctaves='3' result='noise'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23grain)' opacity='0.3'/%3E%3C/svg%3E") !important;
+        background-size: cover, 200px 200px !important;
+        border-color: #E57373 !important;
+    }
+
+    /* Teak (Abyss) - Golden Vertical Grain */
+    .theme-box[data-theme="abyss"] {
+        background-color: #8B5A2B !important;
+        background-image:
+            linear-gradient(90deg, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.2)),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100%25' height='100%25'%3E%3Cdefs%3E%3Cpattern id='wood' width='10' height='100' patternUnits='userSpaceOnUse'%3E%3Cpath d='M0 0 V100 M5 0 V100' stroke='%235C4033' stroke-width='0.5' opacity='0.3'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23wood)'/%3E%3C/svg%3E") !important;
+        border-color: #FFB300 !important;
+        color: #2b1b00 !important;
+        text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4) !important;
+    }
+
+    .theme-box[data-theme="abyss"] .theme-name {
+        color: #3E2723 !important;
+    }
+
+    /* Birch (Inferno) - Light Wood with Knots */
+    .theme-box[data-theme="inferno"] {
+        background-color: #F5F5F5 !important;
+        background-image:
+            radial-gradient(circle at 20% 40%, rgba(0, 0, 0, 0.1) 0%, transparent 10%),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='Birch'%3E%3CfeTurbulence type='turbulence' baseFrequency='0.05 0.01' numOctaves='2' result='noise'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23Birch)' opacity='0.15'/%3E%3C/svg%3E") !important;
+        border-color: #B0BEC5 !important;
+        color: #212121 !important;
+        text-shadow: none !important;
+    }
+
+    .theme-box[data-theme="inferno"] .theme-name {
+        color: #212121 !important;
+    }
+
+    /* Maple (Spectral) - Smooth Light Grain */
+    .theme-box[data-theme="spectral"] {
+        background-color: #FFCC80 !important;
+        background-image:
+            linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0)),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150'%3E%3Cfilter id='Maple'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.002 0.02' numOctaves='4' result='noise'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23Maple)' opacity='0.4'/%3E%3C/svg%3E") !important;
+        border-color: #FFE0B2 !important;
+        color: #4E342E !important;
+        text-shadow: none !important;
+    }
+
+    .theme-box[data-theme="spectral"] .theme-name {
+        color: #5D4037 !important;
+    }
+
+    /* Locked Theme State */
+    .theme-box.locked {
+        filter: grayscale(100%) !important;
+        opacity: 0.5 !important;
+        cursor: not-allowed !important;
+        position: relative !important;
+    }
+
+    .theme-box.locked::before {
+        content: '🔒' !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        font-size: 32px !important;
+        z-index: 10 !important;
+        filter: grayscale(0%) !important;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8) !important;
+    }
+
+    .theme-box.locked:hover {
+        transform: none !important;
+        box-shadow: none !important;
+    }
+
+    .theme-box:not(.locked):hover {
+        transform: translateY(-2px) !important;
+        box-shadow:
+            0 8px 20px rgba(0, 0, 0, 0.6),
+            inset 0 0 20px rgba(255, 215, 0, 0.2) !important;
+        border-color: rgba(255, 215, 0, 0.9) !important;
+    }
+
+    .theme-box.active {
+        border: 4px solid #00E676 !important;
+        box-shadow:
+            0 0 20px rgba(0, 230, 118, 0.4),
+            inset 0 0 30px rgba(0, 230, 118, 0.2) !important;
+    }
+
+    /* Small corner gem indicator instead of big preview */
+    .color-gem {
+        width: 16px !important;
+        height: 16px !important;
+        border-radius: 50% !important;
+        position: absolute !important;
+        top: 10px !important;
+        right: 10px !important;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.5), inset 0 0 4px rgba(0, 0, 0, 0.3) !important;
+        border: 2px solid rgba(255, 255, 255, 0.4) !important;
+        z-index: 5 !important;
+    }
+
+    .theme-content-wrap {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        width: 100% !important;
+        height: 100% !important;
+        z-index: 2 !important;
+    }
+
+    .theme-name {
+        font-size: 16px !important;
+        font-weight: 900 !important;
+        color: #fff !important;
+        text-transform: uppercase !important;
+        letter-spacing: 1px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .theme-unlock {
+        font-size: 10px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        color: rgba(255, 255, 255, 0.9) !important;
+        background: rgba(0, 0, 0, 0.4) !important;
+        padding: 2px 8px !important;
+        border-radius: 10px !important;
+        letter-spacing: 0.5px !important;
+    }
+
+    /* Hide old preview just in case */
+    .theme-preview {
+        display: none !important;
+    }
+
+    .achievements-list {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+        padding-bottom: 20px !important;
+    }
+
+    .ach-card {
+        background: rgba(0, 0, 0, 0.3) !important;
+        border: 1px solid rgba(255, 215, 0, 0.2) !important;
+        border-radius: 10px !important;
+        padding: 8px !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        opacity: 0.5 !important;
+    }
+
+    .ach-card.unlocked {
+        opacity: 1 !important;
+        background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(0, 0, 0, 0.4)) !important;
+        border-color: rgba(255, 215, 0, 0.5) !important;
+    }
+
+    .ach-icon {
+        font-size: 20px !important;
+    }
+
+    .ach-name {
+        font-size: 11px !important;
+        font-weight: 900 !important;
+        color: #FFD54F !important;
+    }
+
+    .ach-desc {
+        font-size: 8px !important;
+        opacity: 0.6 !important;
+        line-height: 1.1 !important;
+    }
+
+    .ach-card.unlocked {
+        opacity: 1 !important;
+        background: linear-gradient(90deg, rgba(0, 210, 255, 0.2) 0%, rgba(80, 50, 30, 0.4) 100%) !important;
+        border-color: rgba(0, 210, 255, 0.5) !important;
+        border-left-color: #00D2FF !important;
+        box-shadow:
+            0 4px 16px rgba(0, 210, 255, 0.3),
+            inset 0 1px 0 rgba(0, 210, 255, 0.2) !important;
+    }
+
+    .ach-card:hover {
+        transform: translateX(4px) !important;
+        border-left-width: 7px !important;
+    }
+
+    .ach-icon {
+        font-size: 28px !important;
+        filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6)) !important;
+        flex-shrink: 0 !important;
+    }
+
+    .ach-info {
+        flex: 1 !important;
+    }
+
+    .ach-name {
+        font-size: 14px !important;
+        font-weight: 800 !important;
+        color: #FFD54F !important;
+        margin-bottom: 3px !important;
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important;
+    }
+
+    .ach-desc {
+        font-size: 11px !important;
+        color: rgba(255, 255, 255, 0.7) !important;
+        line-height: 1.3 !important;
+    }
+
+    /* Scrollbar Styling for Stats Page */
+    #upgrades-list::-webkit-scrollbar,
+    .achievements-list::-webkit-scrollbar {
+        width: 8px !important;
+    }
+
+    #upgrades-list::-webkit-scrollbar-track,
+    .achievements-list::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.3) !important;
+        border-radius: 4px !important;
+    }
+
+    #upgrades-list::-webkit-scrollbar-thumb,
+    .achievements-list::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #FFD54F 0%, #FFA726 100%) !important;
+        border-radius: 4px !important;
+        border: 2px solid rgba(0, 0, 0, 0.2) !important;
+    }
+
+    #upgrades-list::-webkit-scrollbar-thumb:hover,
+    .achievements-list::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, #FFE082 0%, #FFB74D 100%) !important;
+    }
+
+    /* ===== GLASS PANELS ===== */
+    .glass-panel {
+        padding: 12px !important;
+        margin: 8px 0 !important;
+    }
+
+    /* ===== HUD OPTIMIZATION ===== */
+    .hud-group {
+        padding: 6px 10px !important;
+        min-width: 70px !important;
+    }
+
+    .hud-label {
+        font-size: 9px !important;
+    }
+
+    .hud-value {
+        font-size: 14px !important;
+    }
+
+    /* ===== ICON SIZING CONTROL ===== */
+    .icon-btn-glass {
+        width: 40px !important;
+        height: 40px !important;
+        font-size: 18px !important;
+    }
+
+    /* Prevent oversized emojis/icons */
+    .t-icon,
+    .mode-icon-wrap,
+    .shop-icon-img {
+        max-width: 100% !important;
+        max-height: 100% !important;
+        object-fit: contain !important;
+    }
+}
+
+.btn-premium.btn-adventure {
+    background: linear-gradient(to bottom, #00ACC1, #00838F) !important;
+    border-bottom: 4px solid #006064 !important;
+}
+
+/* Leaderboard Tabs */
+.tab-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+    padding: 10px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+    background: var(--gold-color);
+    color: #3E2723;
+    box-shadow: 0 4px 15px rgba(255, 213, 79, 0.3);
+    border-color: transparent;
+}
+
+.status-indicator-online {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background: #4caf50;
+    border-radius: 50%;
+    margin-right: 5px;
+    box-shadow: 0 0 5px #4caf50;
+    animation: pulse-online 2s infinite;
+}
+
+@keyframes pulse-online {
+    0% {
+        opacity: 0.5;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.5;
+    }
 }
